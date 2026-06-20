@@ -1,0 +1,56 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User private data, customized credentials, CV information, saved careers and job match records.",
+      "type": "object",
+      "properties": {
+        "fullName": {
+          "type": "string"
+        },
+        "targetRole": {
+          "type": "string"
+        },
+        "targetLocation": {
+          "type": "string"
+        },
+        "skills": {
+          "type": "array"
+        },
+        "education": {
+          "type": "string"
+        },
+        "certifications": {
+          "type": "string"
+        },
+        "driverLicenses": {
+          "type": "array"
+        },
+        "experience": {
+          "type": "string"
+        },
+        "interests": {
+          "type": "string"
+        },
+        "cvText": {
+          "type": "string"
+        },
+        "favoriteJobs": {
+          "type": "array"
+        },
+        "savedJobPosts": {
+          "type": "array"
+        },
+        "completedSteps": {
+          "type": "object"
+        }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile with saved careers, job match records, and dynamic step progression states."
+    }
+  }
+}

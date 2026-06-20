@@ -1,0 +1,6 @@
+{
+  "name": "Karriaralg",
+  "description": "An intelligent career platform and AI advisor customized for Sweden. Offers career chat, real-time job searching, resume matching, and labor market analysis.",
+  "requestFramePermissions": ["camera", "microphone", "geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

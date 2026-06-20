@@ -1,0 +1,22 @@
+{
+  "name": "Karriärälg",
+  "short_name": "Karriärälg",
+  "description": "En intelligent karriärplattform och AI-rådgivare anpassad för Sverige. Karriärchatten, Platsbankshjälpen och lönestatistik.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FCF9F2",
+  "theme_color": "#004B76",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
