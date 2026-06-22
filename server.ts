@@ -14,16 +14,26 @@ const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 app.use(express.json({ limit: "12mb" }));
 app.use(express.urlencoded({ limit: "12mb", extended: true }));
 
-// Initialize Google GenAI Client
+// Initialize Google GenAI Client lazily to prevent startup crash if GEMINI_API_KEY is missing.
 const apiKey = process.env.GEMINI_API_KEY;
-const ai = new GoogleGenAI({
-  apiKey: apiKey,
-  httpOptions: {
-    headers: {
-      'User-Agent': 'aistudio-build',
+let aiInstance: GoogleGenAI | null = null;
+
+function getAIClient(): GoogleGenAI {
+  if (!aiInstance) {
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY is not defined. Please set it in the Secrets panel.");
     }
+    aiInstance = new GoogleGenAI({
+      apiKey: apiKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        }
+      }
+    });
   }
-});
+  return aiInstance;
+}
 
 // Robust generate function with automatic model fallback and retries to avoid temporary 503 / high demand errors
 async function generateContentWithFallback(params: { model?: string, contents: any, config?: any }) {
@@ -35,7 +45,7 @@ async function generateContentWithFallback(params: { model?: string, contents: a
   for (const model of models) {
     try {
       console.log(`Executing request using model: ${model} (Primary attempt)`);
-      const response = await ai.models.generateContent({
+      const response = await getAIClient().models.generateContent({
         ...params,
         model: model
       });
@@ -78,7 +88,7 @@ async function generateContentWithFallback(params: { model?: string, contents: a
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       console.log(`Retrying request using fallback model: ${retryModel} (Attempt ${attempt}/${maxRetries})`);
-      const response = await ai.models.generateContent({
+      const response = await getAIClient().models.generateContent({
         ...params,
         model: retryModel
       });
