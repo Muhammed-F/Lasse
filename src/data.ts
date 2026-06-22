@@ -27,7 +27,7 @@ export const SWEDEN_REGIONS = [
   "Distans (Sverige)"
 ];
 
-export const IN_DEMAND_JOBS: DemandJob[] = [
+export const BASE_IN_DEMAND_JOBS: DemandJob[] = [
   {
     role: "Mjukvaruutvecklare (Software Developer)",
     activeAds: 5410,
@@ -468,6 +468,13 @@ export const IN_DEMAND_JOBS: DemandJob[] = [
     educationRequired: "YH-examen inom B2B-försäljning, säljutbildning eller dokumenterat framgångsrik säljhistorik.",
     category: "Ekonomi"
   }
+];
+
+import { EXPANDED_EXTRA_JOBS } from "./data_all_jobs";
+
+export const IN_DEMAND_JOBS: DemandJob[] = [
+  ...BASE_IN_DEMAND_JOBS,
+  ...EXPANDED_EXTRA_JOBS
 ];
 
 export const INITIAL_USER_PROFILE = {

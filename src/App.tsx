@@ -19,6 +19,7 @@ import {
   Plus,
   X,
   ChevronRight,
+  ChevronDown,
   GraduationCap,
   Award,
   Calendar,
@@ -1334,6 +1335,7 @@ export default function App() {
   const [catalogCategoryFilter, setCatalogCategoryFilter] = useState<string>("all");
   const [catalogSort, setCatalogSort] = useState<string>("ads-desc");
   const [selectedCatalogJob, setSelectedCatalogJob] = useState<typeof IN_DEMAND_JOBS[0] | null>(null);
+  const [catalogVisibleCount, setCatalogVisibleCount] = useState(20);
 
   // Evaluation trigger states
   const [evaluating, setEvaluating] = useState(false);
@@ -1632,6 +1634,7 @@ export default function App() {
 
   // Synchronize catalog selection on filters changes
   useEffect(() => {
+    setCatalogVisibleCount(20);
     const list = IN_DEMAND_JOBS.filter(job => {
       const matchesKeyword = !catalogSearch.trim() || 
         job.role.toLowerCase().includes(catalogSearch.toLowerCase()) ||
@@ -3321,48 +3324,68 @@ export default function App() {
                           );
                         }
 
-                        return filtered.map((job) => {
-                          const isSelected = selectedCatalogJob && selectedCatalogJob.role === job.role;
-                          return (
-                            <div 
-                              key={job.role}
-                              id={`catalog-row-${job.role.replace(/\s+/g, '-')}`}
-                              onClick={() => {
-                                setSelectedCatalogJob(job);
-                                setIsMobileCatalogDetailOpen(true);
-                              }}
-                              className={`p-3 md:p-4 rounded-xl transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2.5 border ${
-                                isSelected 
-                                  ? 'bg-sky-50/60 border-sky-300 md:border-l-4 md:border-l-sky-600 shadow-[0_4px_12px_rgba(3,105,161,0.06)]' 
-                                  : 'hover:bg-slate-50 border-slate-100 md:border-l-4 md:border-l-transparent bg-white/45'
-                              } md:flex-row md:items-center md:gap-4`}
-                            >
-                              <div className="space-y-1.5 flex-1 min-w-[0px]">
-                                <h4 className="font-bold text-[11px] md:text-xs text-text-main line-clamp-2 md:line-clamp-none leading-snug min-h-[30px] md:min-h-0" title={job.role}>
-                                  {job.role}
-                                </h4>
-                                <div className="flex flex-col gap-1 md:flex-row md:items-center md:gap-2 font-mono text-[9px] md:text-[9.5px]">
-                                  <span className="text-sky-755 font-bold bg-sky-50/80 px-1.5 py-0.5 rounded-sm border border-sky-100/30 w-fit">
-                                    {job.category}
-                                  </span>
-                                  <span className="hidden md:inline text-slate-300">•</span>
-                                  <span className="text-emerald-700 font-bold">
-                                    {(job.activeAds).toLocaleString("sv-SE")} annonser
-                                  </span>
-                                </div>
-                              </div>
+                        return (
+                          <>
+                            {filtered.slice(0, catalogVisibleCount).map((job) => {
+                              const isSelected = selectedCatalogJob && selectedCatalogJob.role === job.role;
+                              return (
+                                <div 
+                                  key={job.role}
+                                  id={`catalog-row-${job.role.replace(/\s+/g, '-')}`}
+                                  onClick={() => {
+                                    setSelectedCatalogJob(job);
+                                    setIsMobileCatalogDetailOpen(true);
+                                  }}
+                                  className={`p-3 md:p-4 rounded-xl transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2.5 border ${
+                                    isSelected 
+                                      ? 'bg-sky-50/60 border-sky-300 md:border-l-4 md:border-l-sky-600 shadow-[0_4px_12px_rgba(3,105,161,0.06)]' 
+                                      : 'hover:bg-slate-50 border-slate-100 md:border-l-4 md:border-l-transparent bg-white/45'
+                                  } md:flex-row md:items-center md:gap-4`}
+                                >
+                                  <div className="space-y-1.5 flex-1 min-w-[0px]">
+                                    <h4 className="font-bold text-[11px] md:text-xs text-text-main line-clamp-2 md:line-clamp-none leading-snug min-h-[30px] md:min-h-0" title={job.role}>
+                                      {job.role}
+                                    </h4>
+                                    <div className="flex flex-col gap-1 md:flex-row md:items-center md:gap-2 font-mono text-[9px] md:text-[9.5px]">
+                                      <span className="text-sky-755 font-bold bg-sky-50/80 px-1.5 py-0.5 rounded-sm border border-sky-100/30 w-fit">
+                                        {job.category}
+                                      </span>
+                                      <span className="hidden md:inline text-slate-300">•</span>
+                                      <span className="text-emerald-700 font-bold">
+                                        {(job.activeAds).toLocaleString("sv-SE")} annonser
+                                      </span>
+                                    </div>
+                                  </div>
 
-                              <div className="text-left md:text-right shrink-0 border-t border-slate-100/50 pt-2 md:pt-0 md:border-t-0 flex flex-row justify-between md:flex-col items-center md:items-end w-full md:w-auto">
-                                <span className="font-bold text-slate-900 font-sans text-[11px] md:text-xs">
-                                  {(job.avgSalary).toLocaleString("sv-SE")} kr
-                                </span>
-                                <span className="text-[8px] md:text-[8.5px] uppercase font-mono font-bold text-slate-400">
-                                  Snittlön
-                                </span>
+                                  <div className="text-left md:text-right shrink-0 border-t border-slate-100/50 pt-2 md:pt-0 md:border-t-0 flex flex-row justify-between md:flex-col items-center md:items-end w-full md:w-auto">
+                                    <span className="font-bold text-slate-900 font-sans text-[11px] md:text-xs">
+                                      {(job.avgSalary).toLocaleString("sv-SE")} kr
+                                    </span>
+                                    <span className="text-[8px] md:text-[8.5px] uppercase font-mono font-bold text-slate-400">
+                                      Snittlön
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+
+                            {filtered.length > catalogVisibleCount && (
+                              <div className="col-span-2 pt-4 pb-6 px-1 flex justify-center w-full">
+                                <button
+                                  type="button"
+                                  onClick={() => setCatalogVisibleCount(prev => prev + 20)}
+                                  className="w-full md:w-auto px-6 py-2.5 bg-slate-100 font-bold hover:bg-slate-200/85 active:bg-slate-200/95 text-slate-800 text-xs tracking-wide rounded-xl border border-slate-200/60 shadow-xs cursor-pointer flex items-center justify-center gap-1.5 transition-colors"
+                                >
+                                  <span>Visa fler yrken</span>
+                                  <ChevronDown className="h-4 w-4 text-slate-500 animate-pulse" />
+                                  <span className="bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded-md text-[10px]">
+                                    +{Math.min(20, filtered.length - catalogVisibleCount)}
+                                  </span>
+                                </button>
                               </div>
-                            </div>
-                          );
-                        });
+                            )}
+                          </>
+                        );
                       })()}
                     </div>
                   </div>
