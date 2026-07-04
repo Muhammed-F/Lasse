@@ -1295,12 +1295,15 @@ export default function App() {
       return;
     }
 
+    const controller = new AbortController();
+
     const timer = setTimeout(async () => {
       try {
         setCheckingSearchSpelling(true);
         const res = await fetch("/api/suggest-spelling", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
           body: JSON.stringify({ text: searchKeyword, context: "search" })
         });
         if (res.ok) {
@@ -1311,14 +1314,21 @@ export default function App() {
             setSearchSpellingSuggestion(null);
           }
         }
-      } catch (err) {
-        console.error("Spelling check error in search:", err);
+      } catch (err: any) {
+        if (err && err.name !== "AbortError") {
+          console.warn("Spelling check search fetch notice:", err.message || err);
+        }
       } finally {
-        setCheckingSearchSpelling(false);
+        if (!controller.signal.aborted) {
+          setCheckingSearchSpelling(false);
+        }
       }
     }, 700);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [searchKeyword]);
 
   // Active Job details focus state
