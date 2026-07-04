@@ -441,8 +441,119 @@ export function expandCompactJob(compact: CompactJobDef): {
 
   const titleLower = compact.r.toLowerCase();
 
+  // --- Precise keyword matching to bypass inaccurate general falls ---
+  let matchedKeyword = false;
+
+  if (titleLower.includes("fönsterputsare") || titleLower.includes("fönsterputs")) {
+    skills = ["Fönsterputsning", "Arbete på hög höjd", "Säkerhetstänk", "Verktygsteknik", "Kundkontakt"];
+    education = "Ingen formell eftergymnasial utbildning krävs. Upplärning sker på plats.";
+    outlook = "Stabil efterfrågan hos fönsterputsningsfirmor med säsongstoppar under vår och sommar.";
+    matchedKeyword = true;
+  } else if (titleLower.includes("däckmontör") || titleLower.includes("tyre fitter")) {
+    skills = ["Däckservice", "Hjulbalansering", "Fordonshantering", "Fysisk styrka", "Mutterdragning"];
+    education = "Ingen formell eftergymnasial utbildning krävs. Upplärning på plats är standard.";
+    outlook = "Mycket stark säsongsefterfrågan i hela landet under däckbytarsäsongerna (vår/höst).";
+    matchedKeyword = true;
+  } else if (titleLower.includes("terminalarbetare") || titleLower.includes("terminal worker")) {
+    skills = ["Godshantering", "Lagersystem (WMS)", "Plock & Pack", "Säkerhetsregler", "Truckkort (A+B)"];
+    education = "Ingen formell eftergymnasial utbildning krävs. Truckkort är starkt meriterande.";
+    outlook = "Mycket goda möjligheter vid omlastningsterminaler och logistikhubbar.";
+    matchedKeyword = true;
+  } else if (titleLower.includes("solcell") || titleLower.includes("solar")) {
+    skills = ["Solcellsinstallation", "Elarbete", "Arbete på hög höjd", "Takmontage", "Säkerhetstänk"];
+    education = "Gymnasial el- eller energiutbildning alternativt yrkesinriktad certifiering.";
+    outlook = "Mycket goda möjligheter i takt med den gröna energiomställningen i hela Sverige.";
+    matchedKeyword = true;
+  } else if (titleLower.includes("vindkraft")) {
+    skills = ["Vindkraftsteknik", "Felsökning", "Arbete på hög höjd", "Mekanik", "Säkerhetsregler"];
+    education = "Yrkeshögskoleutbildning (YH) till vindkraftstekniker eller drifttekniker.";
+    outlook = "Goda möjligheter i takt med utbyggnaden av förnybar energi i landets vindkraftsparker.";
+    matchedKeyword = true;
+  } else if (titleLower.includes("isoleringsmontör")) {
+    skills = ["Isoleringsteknik", "Materialkunskap", "Teknisk ritningsläsning", "Fysisk kondition", "Säkerhetsföreskrifter"];
+    education = "Gymnasialt bygg- eller installationsprogram alternativt lärlingsplats.";
+    outlook = "Stabil efterfrågan på grund av energieffektiviseringskrav i bostadsbeståndet.";
+    matchedKeyword = true;
+  } else if (titleLower.includes("skyltmontör")) {
+    skills = ["Skyltmontering", "Enklare elinstallation", "Säkerhetstänk", "Borr- och fästteknik", "Arbete på hög höjd"];
+    education = "Ingen formell eftergymnasial utbildning krävs, upplärning sker på plats.";
+    outlook = "Stabil marknad kopplad till butiksetableringar och företagsreklam.";
+    matchedKeyword = true;
+  } else if (titleLower.includes("hissmontör") || titleLower.includes("hisstekniker")) {
+    skills = ["Elektriska kretsar", "Mekanisk felsökning", "Hissinstallation", "Säkerhetsstandarder", "Underhållsteknik"];
+    education = "Gymnasial el-, energi- eller industriteknisk utbildning följt av certifiering.";
+    outlook = "Goda och stabila möjligheter med krav på obligatoriska hissiinspektioner och renoveringar.";
+    matchedKeyword = true;
+  } else if (titleLower.includes("lokalvårdare") || titleLower.includes("städare") || titleLower.includes("hemstädare") || titleLower.includes("städpersonal")) {
+    skills = ["Ytstädning", "Kemikaliehantering", "Ergonomiskt arbete", "Hygienrutiner", "Noggrannhet"];
+    education = "Ingen formell eftergymnasial utbildning krävs. SRY- eller PRYL-yrkesbevis är meriterande.";
+    outlook = "Mycket stabil arbetsmarknad inom kontor, skolor, sjukhus och privata hushåll.";
+    matchedKeyword = true;
+  } else if (titleLower.includes("sanering")) {
+    skills = ["Skadesanering", "Kemikalieskydd", "Asbest- och fukthantering", "Högtrycksutrustning", "Säkerhetsrutiner"];
+    education = "Ingen formell eftergymnasial utbildning krävs. Specialistutbildningar ges på plats.";
+    outlook = "Stabil marknad inom miljö-, skade- och giftrekonstruktion.";
+    matchedKeyword = true;
+  } else if (titleLower.includes("fastighetsskötare") || titleLower.includes("fastighetsvärd") || titleLower.includes("property caretaker")) {
+    skills = ["Fastighetsservice", "Kundkontakt", "Yttre skötsel", "Enklare rörarbete", "Rapporteringssystem"];
+    education = "Gymnasial fastighetsutbildning, Komvux eller yrkeshögskola (YH).";
+    outlook = "Goda chanser till jobb hos bostadsbolag, kommuner och privata fastighetsägare.";
+    matchedKeyword = true;
+  } else if (titleLower.includes("fastighetstekniker")) {
+    skills = ["Styr- och reglerteknik", "Värme & Ventilation (HVAC)", "Felavhjälpande underhåll", "Energihushållning", "Digitala styrsystem"];
+    education = "Eftergymnasial YH-utbildning till fastighetstekniker eller drifttekniker.";
+    outlook = "Mycket stark efterfrågan till följd av ökade krav på energieffektivitet i fastigheter.";
+    matchedKeyword = true;
+  } else if (titleLower.includes("målare") || titleLower.includes("painter")) {
+    skills = ["Underarbete & spackling", "Färglära & ytbehandling", "Tapetsering", "Fysisk noggrannhet", "Ställningsbyggnad"];
+    education = "Gymnasial måleriutbildning eller vuxenutbildning följt av timmar för gesällbrev.";
+    outlook = "Stabil efterfrågan knuten till nybyggnationer och löpande renoveringar.";
+    matchedKeyword = true;
+  } else if (titleLower.includes("snickare") || titleLower.includes("träarbetare")) {
+    skills = ["Träkonstruktion", "Ritningsläsning", "Verktygshantering", "Måttagning", "Arbetsplatssäkerhet"];
+    education = "Gymnasieutbildning inom bygg och anläggning följt av lärlingstimmar.";
+    outlook = "Stabil arbetsmarknad med ett kontinuerligt behov av ROT-renoveringar.";
+    matchedKeyword = true;
+  } else if (titleLower.includes("murare") || titleLower.includes("plattsättare") || titleLower.includes("kakelsättare")) {
+    skills = ["Plattsättning & fogning", "Murningsteknik", "Våtrumsbehörighet (BBV)", "Ritningsläsning", "Materiallära"];
+    education = "Gymnasial byggutbildning och branschbehörighet för våtrum.";
+    outlook = "Goda och stabila utsikter då badrumsrenoveringar kräver auktoriserat utförande.";
+    matchedKeyword = true;
+  } else if (titleLower.includes("asfalt") || titleLower.includes("vägbyggare") || titleLower.includes("anläggningsarbetare")) {
+    skills = ["Markarbete", "Asfalteringsteknik", "Ritningsläsning", "Maskinkörning", "Säkerhet på väg"];
+    education = "Bygg- och anläggningsprogrammet på gymnasienivå alternativt upplärning.";
+    outlook = "Stabil marknad driven av infrastrukturunderhåll och vägsatsningar.";
+    matchedKeyword = true;
+  } else if (titleLower.includes("grävmaskin") || titleLower.includes("kranförare") || titleLower.includes("hjullastare") || titleLower.includes("maskinförare")) {
+    skills = ["Anläggningskörning", "Maskinfunktioner", "Säkerhetsbestämmelser", "Grävövervakning", "Grundarbetsteknik"];
+    education = "Förarbevis för anläggningsmaskiner via certifierat organ eller gymnasial anläggningsutbildning.";
+    outlook = "Mycket goda möjligheter tack vare omfattande infrastruktur- och industribyggen.";
+    matchedKeyword = true;
+  } else if (titleLower.includes("mekaniker") || titleLower.includes("reparatör")) {
+    skills = ["Mekanisk felsökning", "Fordonselektronik", "Underhållsservice", "Verktygsteknik", "Kvalitetskontroll"];
+    education = "Gymnasial fordonsutbildning, maskinteknik eller motsvarande yrkeshögskola.";
+    outlook = "Mycket goda möjligheter för specialistmekaniker på tyngre fordon och industrimaskiner.";
+    matchedKeyword = true;
+  } else if (titleLower.includes("bagare") || titleLower.includes("konditor")) {
+    skills = ["Bakteknik", "Livsmedelshygien (HACCP)", "Receptskalning", "Konditorihantverk", "Råvarukännedom"];
+    education = "Gymnasieprogrammet för restaurang och livsmedel alternativt bageriutbildning.";
+    outlook = "Stabil och konkurrenskraftig marknad med goda chanser för hantverksskickliga personer.";
+    matchedKeyword = true;
+  } else if (titleLower.includes("slaktare") || titleLower.includes("styckare")) {
+    skills = ["Styckningsteknik", "Knivhantering & skärpa", "Hygienregler", "Kvalitetssortering", "Kylkedjehantering"];
+    education = "Livsmedelsprogrammet med inriktning mot chark eller motsvarande vuxenutbildning.";
+    outlook = "Goda chanser till jobb, framför allt inom svensk livsmedelsindustri och charkuterier.";
+    matchedKeyword = true;
+  } else if (titleLower.includes("trädgård") || titleLower.includes("arborist") || titleLower.includes("skogsarbetare") || titleLower.includes("lantbruk")) {
+    skills = ["Växtkännedom", "Trädbeskärning & röjning", "Maskinskötsel", "Arbetsmiljösäkerhet", "Trädgårdsskötsel"];
+    education = "Naturbruksprogrammet på gymnasienivå eller YH trädgårdsmästare/arborist.";
+    outlook = "Stabil och säsongsbetonad stark marknad med mycket goda möjligheter för utbildade arborister.";
+    matchedKeyword = true;
+  }
+
   // --- Category Specifics ---
-  if (compact.c === "Teknik") {
+  if (!matchedKeyword) {
+    if (compact.c === "Teknik") {
     outlook = compact.d === "High" 
       ? "Mycket goda möjligheter till följd av pågående teknisk transformation, molnsatsningar och hög efterfrågan i industrin."
       : "Stabil marknad med ett jämnt inflöde av uppdrag och behov av kvalificerade systemtekniker.";
@@ -496,24 +607,36 @@ export function expandCompactJob(compact: CompactJobDef): {
 
   } else if (compact.c === "Säkerhet / Logistik") {
     outlook = compact.d === "High"
-      ? "Mycket goda möjligheter. Transport- och säkerhetsbranscherna har ett kroniskt rekryteringsbehov på grund av stora pensionsavgångar."
+      ? "Mycket goda möjligheter. Branschen har ett kontinuerligt, starkt rekryteringsbehov."
       : "Stabilt behov som generellt följer den industriella konjunkturen och den nationella tillväxten.";
 
-    if (titleLower.includes("chaufför") || titleLower.includes("förare") || titleLower.includes("pilot")) {
-      skills = ["Yrkeskompetensbevis (YKB)", "Körkort (C/CE/D/CE)", "Lastsäkring", "Navigering", "Eco-Driving"];
-      education = "Yrkesförarutbildning på gymnasienivå, godkänd vuxenutbildning (Komvux) samt gällande yrkeslicenser.";
-    } else if (titleLower.includes("lager") || titleLower.includes("truck")) {
-      skills = ["Truckkort (A+B)", "Plock och Pack", "Lagersystem (WMS)", "Logistikflöde", "Arbetsmiljösäkerhet"];
-      education = "Ingen formell eftergymnasial utbildning krävs. Giltigt truckkort är starkt meriterande.";
-    } else if (titleLower.includes("väktare") || titleLower.includes("skyddsvakt") || titleLower.includes("polis") || titleLower.includes("ordning")) {
-      skills = ["Konflikthantering", "Hjärt-lungräddning (HLR)", "Rondering", "Lag & Rätt", "Bevakningsmetodik"];
-      education = "Godkänd väktarutbildning (VU1 & VU2) via auktoriserat organ, Polisutbildning eller militär examen.";
-    } else if (titleLower.includes("elektriker") || titleLower.includes("vvs") || titleLower.includes("rörmokare") || titleLower.includes("montör")) {
-      skills = ["Ritningsläsning", "Kopplingsschema", "Felförebyggande underhåll", "Elsäkerhet", "Sanitetsteknik"];
-      education = "Gymnasialt bygg-, fastighets- eller elprogram samt lärlingstid för formellt yrkesbevis.";
+    if (titleLower.includes("chaufför") || titleLower.includes("förare") || titleLower.includes("pilot") || titleLower.includes("buss") || titleLower.includes("taxi") || titleLower.includes("spårvagn") || titleLower.includes("tågvärd") || titleLower.includes("kabin") || titleLower.includes("flyg")) {
+      skills = ["Kundkontakt", "Säker körmetodik (Eco-driving)", "Navigering", "Fordonsskötsel", "Yrkeskompetensbevis (YKB)"];
+      education = "Yrkesförarutbildning på gymnasienivå, Komvux eller godkänd pilotutbildning med gällande certifikat.";
+    } else if (titleLower.includes("sjökapten") || titleLower.includes("styrman") || titleLower.includes("matros") || titleLower.includes("sjö")) {
+      skills = ["Navigering till sjöss", "Sjösäkerhet", "Lastsäkring", "Fartygshantering", "Sjömanskap"];
+      education = "Sjökaptensexamen, sjöingenjörsexamen eller matrosutbildning på gymnasienivå.";
+    } else if (titleLower.includes("lager") || titleLower.includes("truck") || titleLower.includes("logistik") || titleLower.includes("sorterare") || titleLower.includes("terminal") || titleLower.includes("pack") || titleLower.includes("stuvare") || titleLower.includes("hamnarbetare")) {
+      skills = ["Lagersystem (WMS)", "Plock & Pack", "Godshantering", "Truckkort (A+B)", "Logistiska flöden"];
+      education = "Ingen formell eftergymnasial utbildning krävs. Truckkort och internutbildning är branschstandard.";
+    } else if (titleLower.includes("väktare") || titleLower.includes("skyddsvakt") || titleLower.includes("polis") || titleLower.includes("ordning") || titleLower.includes("tull") || titleLower.includes("kriminalvård") || titleLower.includes("officer") || titleLower.includes("bevakning") || titleLower.includes("rädd") || titleLower.includes("brandman")) {
+      skills = ["Konflikthantering", "HLR (Hjärt-lungräddning)", "Säkerhetstänk", "Lag och Rätt", "Bevakningsmetodik"];
+      education = "Godkänd väktarutbildning (VU1/VU2), Polisutbildning, militär officersgrad eller statlig tullvårdsteknisk examen.";
+    } else if (titleLower.includes("elektriker") || titleLower.includes("vvs") || titleLower.includes("rörmokare") || titleLower.includes("ventil") || titleLower.includes("larm") || titleLower.includes("hiss") || titleLower.includes("tekniker") || titleLower.includes("reparatör") || titleLower.includes("låssmed") || titleLower.includes("smed") || titleLower.includes("mekaniker")) {
+      skills = ["Teknisk felsökning", "Kopplingsscheman", "Verktygsteknik", "Elsäkerhet / Sanitet", "Säkerhetstänk"];
+      education = "Gymnasialt el-, energi-, installations- eller fordonsprogram alternativt lärlingsprogram för yrkesbevis.";
+    } else if (titleLower.includes("målare") || titleLower.includes("golv") || titleLower.includes("murare") || titleLower.includes("plattsättare") || titleLower.includes("kakel") || titleLower.includes("betong") || titleLower.includes("takläggare") || titleLower.includes("glas") || titleLower.includes("plåt") || titleLower.includes("snickare") || titleLower.includes("träarbetare") || titleLower.includes("asfalt") || titleLower.includes("sten") || titleLower.includes("isoler") || titleLower.includes("skylt") || titleLower.includes("grovarbetare") || titleLower.includes("ställning") || titleLower.includes("håltagare") || titleLower.includes("anläggning") || titleLower.includes("industri")) {
+      skills = ["Ritningsläsning", "Verktygshantering", "Materialkunskap", "Precision och noggrannhet", "Säkerhet på arbetsplatsen"];
+      education = "Gymnasialt bygg- och anläggningsprogram alternativt gedigen lärlingsutbildning på plants.";
+    } else if (titleLower.includes("städare") || titleLower.includes("lokalvård") || titleLower.includes("puts") || titleLower.includes("sanering") || titleLower.includes("miljöarbetare") || titleLower.includes("renhållning") || titleLower.includes("slam")) {
+      skills = ["Sanering & ytrengöring", "Kemikaliehantering", "Ergonomiskt arbetssätt", "Hygienrutiner", "Kundbemötande"];
+      education = "Ingen formell eftergymnasial utbildning krävs. SRY- eller PRYL-yrkesbevis är starkt meriterande.";
+    } else if (titleLower.includes("trädgård") || titleLower.includes("arborist") || titleLower.includes("skog") || titleLower.includes("lantbruk") || titleLower.includes("traktor")) {
+      skills = ["Växtkännedom", "Trädbeskärning", "Yttre skötsel", "Maskinhantering", "Säkerhetsföreskrifter"];
+      education = "Naturbruksprogrammet på gymnasienivå, YH trädgårdsmästare eller certifierad arboristutbildning.";
     } else {
-      skills = ["Ritningsförståelse", "Materialbehandling", "Svets- och lödningsteknik", "CNC-programmering", "Kvalitetskontroller"];
-      education = "Gymnasial industriteknisk utbildning eller specialistcertifiering inom yrkesområdet.";
+      skills = ["Yrkesskicklighet", "Verktygshantering", "Kvalitetskontroll", "Säkerhetstänk", "Materialbehandling"];
+      education = "Gymnasial yrkesutbildning eller praktisk upplärning direkt på arbetsplatsen.";
     }
 
   } else if (compact.c === "Ekonomi") {
@@ -558,6 +681,7 @@ export function expandCompactJob(compact: CompactJobDef): {
       skills = ["Pedagogiskt stöd", "Elevstöd", "Aktivitetsplanering", "Trygghetsskapande", "Gruppaktiviteter"];
       education = "Gymnasial utbildning med barn- och fritidsinriktning, fritidsledarutbildning eller Komvux.";
     }
+  }
   }
 
   return {

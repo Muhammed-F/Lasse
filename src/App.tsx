@@ -1327,8 +1327,15 @@ export default function App() {
   const [isMobileJobDetailOpen, setIsMobileJobDetailOpen] = useState(false);
   const [isMobileCatalogDetailOpen, setIsMobileCatalogDetailOpen] = useState(false);
 
+  // Job comparison states
+  const [selectedCompareRoles, setSelectedCompareRoles] = useState<string[]>([]);
+  const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
+  const [compareSearch, setCompareSearch] = useState("");
+  const [isCompareDropdownOpen, setIsCompareDropdownOpen] = useState(false);
+
   // Job sub-tabs and catalog filtering states
   const [jobsSubTab, setJobsSubTab] = useState<'search' | 'catalog'>('catalog');
+  const [catalogJobLocation, setCatalogJobLocation] = useState<string>("Alla platser");
   const [catalogSearch, setCatalogSearch] = useState("");
   const [catalogSalaryFilter, setCatalogSalaryFilter] = useState<string>("all");
   const [catalogDemandFilter, setCatalogDemandFilter] = useState<string>("all");
@@ -1458,7 +1465,7 @@ export default function App() {
           experience: "",
           interests: "",
           cvText: "",
-          hasSetupCompleted: false,
+          hasSetupCompleted: true,
         };
         setProfile(freshProfilePlaceholder);
         setFavoriteJobs([]);
@@ -1482,7 +1489,7 @@ export default function App() {
               // Ensure we enforce hasSetupCompleted check
               setProfile({
                 ...data.profile,
-                hasSetupCompleted: data.profile.hasSetupCompleted ?? false
+                hasSetupCompleted: true
               });
             }
             setFavoriteJobs(data.favoriteJobs || []);
@@ -1957,7 +1964,8 @@ export default function App() {
     if (selectedCatalogJob) {
       const cleanSearch = selectedCatalogJob.role.split('(')[0].trim();
       setSelectedJob(null); // Clear selected job posting when switching catalog roles
-      triggerSwedishJobSearch(cleanSearch, "All locations");
+      setCatalogJobLocation("Alla platser");
+      triggerSwedishJobSearch(cleanSearch, "Alla platser");
     }
   }, [selectedCatalogJob?.role]);
 
@@ -1980,6 +1988,58 @@ export default function App() {
     );
 
     return { matchPercentage, missing };
+  };
+
+  const getStudyDurationForRole = (role: string): string => {
+    const roleLower = role.toLowerCase();
+    if (roleLower.includes("mjukvaru") || roleLower.includes("utvecklare") || roleLower.includes("developer")) {
+      return "2–3 år (Yrkeshögskola eller Kandidatexamen)";
+    }
+    if (roleLower.includes("analytiker") || roleLower.includes("specialist") || roleLower.includes("security") || roleLower.includes("scientist") || roleLower.includes("ai")) {
+      return "2–3 år (Yrkeshögskola eller Kandidatexamen)";
+    }
+    if (roleLower.includes("sjuksköterska") || roleLower.includes("nurse")) {
+      return "3 år (Sjuksköterskeutbildning, Högskola)";
+    }
+    if (roleLower.includes("lärare") || roleLower.includes("pedagog")) {
+      return "3–5 år (Lärarhögskola)";
+    }
+    if (roleLower.includes("ekonom") || roleLower.includes("ekonomi")) {
+      return "3 år (Kandidatexamen i ekonomi)";
+    }
+    if (roleLower.includes("lastbil") || roleLower.includes("chaufför") || roleLower.includes("fartyg") || roleLower.includes("buss")) {
+      return "3–6 månader (Körkort C/CE + YKB-utbildning)";
+    }
+    if (roleLower.includes("lager") || roleLower.includes("warehouse")) {
+      return "2–4 dagar (Truckkortutbildning A+B)";
+    }
+    if (roleLower.includes("undersköterska")) {
+      return "1.5 år (Vård- och omsorgsprogrammet)";
+    }
+    if (roleLower.includes("handläggare")) {
+      return "3 år (Kandidatexamen i offentlig förvaltning/rättsvetenskap)";
+    }
+    return "1–3 år (Beror på specifik inriktning & bakgrund)";
+  };
+
+  const getJobGrowthForRole = (role: string): string => {
+    const roleLower = role.toLowerCase();
+    if (roleLower.includes("mjukvaru") || roleLower.includes("utvecklare") || roleLower.includes("developer") || roleLower.includes("ai")) {
+      return "Mycket stark tillväxt (+15-20% nästa 5 år) pga automatisering & AI.";
+    }
+    if (roleLower.includes("sjuksköterska") || roleLower.includes("nurse")) {
+      return "Stark tillväxt (+12% nästa 5 år) pga åldrande befolkning.";
+    }
+    if (roleLower.includes("lärare") || roleLower.includes("pedagog")) {
+      return "Stabil tillväxt (+5-8% nästa 5 år) pga pensionsavgångar.";
+    }
+    if (roleLower.includes("lastbil") || roleLower.includes("chaufför")) {
+      return "Hög efterfrågan (+10% nästa 5 år) driven av ökad e-handel.";
+    }
+    if (roleLower.includes("lager") || roleLower.includes("warehouse")) {
+      return "Medel tillväxt (+4% nästa 5 år) balanserat mot lagerautomatisering.";
+    }
+    return "Stabil tillväxt (+5% nästa 5 år) i linje med genomsnittlig utveckling.";
   };
 
   // File drag & drop triggers
@@ -2056,7 +2116,7 @@ export default function App() {
         <div className="flex items-center justify-between border-b border-slate-100 pb-2">
           <div className="flex items-center gap-2">
             <h4 className="font-extrabold text-xs text-slate-900 uppercase tracking-widest font-mono">
-              Lediga Tjänster Just Nu (Sverige)
+              Lediga Tjänster Just Nu
             </h4>
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-450 opacity-75"></span>
@@ -2066,6 +2126,28 @@ export default function App() {
           <span className="text-[10px] font-mono font-bold bg-slate-100 px-2 py-0.5 rounded text-slate-705">
             {searchingJobs ? "Hämtar..." : `${jobsList.length} aktiva`}
           </span>
+        </div>
+
+        {/* Dynamic Location Filter Dropdown for Catalog Vacancies */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-slate-50 border border-slate-200/60 p-3 rounded-xl">
+          <div className="space-y-0.5">
+            <span className="text-[9px] text-slate-400 font-mono font-bold uppercase block">Filtrera efter plats</span>
+            <span className="text-[10.5px] font-sans text-slate-700 font-semibold">📍 Annonser i: <strong className="text-indigo-700">{catalogJobLocation}</strong></span>
+          </div>
+          <select
+            value={catalogJobLocation}
+            onChange={(e) => {
+              const newLoc = e.target.value;
+              setCatalogJobLocation(newLoc);
+              const cleanSearch = selectedCatalogJob ? selectedCatalogJob.role.split('(')[0].trim() : searchKeyword;
+              triggerSwedishJobSearch(cleanSearch, newLoc);
+            }}
+            className="text-[11px] font-sans font-bold py-1.5 px-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-800 cursor-pointer w-full sm:w-auto"
+          >
+            {SWEDEN_REGIONS.map((reg, ri) => (
+              <option key={ri} value={reg}>{reg}</option>
+            ))}
+          </select>
         </div>
 
         {searchingJobs ? (
@@ -2338,43 +2420,13 @@ export default function App() {
       </header>
 
       {/* 3. WORKING VIEWPORT CANVASES */}
-      <main className={`flex-1 max-w-[1500px] w-full mx-auto ${(currentUser && activeTab === 'chat') ? 'overflow-hidden' : 'overflow-y-auto'} flex flex-col transition-all duration-300 ${activeTab === 'chat' || (currentUser && !profile.hasSetupCompleted) ? 'p-1 sm:p-3 md:p-8 pb-20 md:pb-8' : 'p-4 md:p-8 pb-32 md:pb-8'}`} id="applet-sub-layout">
+      <main className={`flex-1 max-w-[1500px] w-full mx-auto ${(currentUser && activeTab === 'chat') ? 'overflow-hidden' : 'overflow-y-auto'} flex flex-col transition-all duration-300 ${activeTab === 'chat' ? 'p-1 sm:p-3 md:p-8 pb-20 md:pb-8' : 'p-4 md:p-8 pb-32 md:pb-8'}`} id="applet-sub-layout">
         
 
 
         <AnimatePresence mode="wait">
-          {currentUser && !profile.hasSetupCompleted ? (
-            <motion.div
-              key="onboarding"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.3 }}
-              className="w-full h-full flex flex-col justify-center min-h-0"
-              id="onboarding-view-wrapper"
-            >
-              <OnboardingWizard
-                initialEmail={currentUser.email || ""}
-                initialName={currentUser.displayName || ""}
-                onSave={async (finalProfile) => {
-                  try {
-                    // Update local state
-                    setProfile(finalProfile);
-                    // Write directly to firestore
-                    const userDocRef = doc(db, "users", currentUser.uid);
-                    await setDoc(userDocRef, {
-                      profile: finalProfile,
-                    }, { merge: true });
-                  } catch (err) {
-                    console.error("Failed to save profile during onboarding:", err);
-                    handleFirestoreError(err, OperationType.WRITE, `users/${currentUser.uid}`);
-                  }
-                }}
-                onLogout={async () => {
-                  await signOut(auth);
-                }}
-              />
-            </motion.div>
+          {false ? (
+            <div />
           ) : (
             <>
               {/* PAGE 1: CHAT ADVISOR */}
@@ -3357,13 +3409,33 @@ export default function App() {
                                     </div>
                                   </div>
 
-                                  <div className="text-left md:text-right shrink-0 border-t border-slate-100/50 pt-2 md:pt-0 md:border-t-0 flex flex-row justify-between md:flex-col items-center md:items-end w-full md:w-auto">
-                                    <span className="font-bold text-slate-900 font-sans text-[11px] md:text-xs">
-                                      {(job.avgSalary).toLocaleString("sv-SE")} kr
-                                    </span>
-                                    <span className="text-[8px] md:text-[8.5px] uppercase font-mono font-bold text-slate-400">
-                                      Snittlön
-                                    </span>
+                                  <div className="text-left md:text-right shrink-0 border-t border-slate-100/50 pt-2 md:pt-0 md:border-t-0 flex flex-row justify-between md:flex-col items-center md:items-end w-full md:w-auto gap-3">
+                                    <div className="flex flex-col text-left md:text-right">
+                                      <span className="font-bold text-slate-900 font-sans text-[11px] md:text-xs">
+                                        {(job.avgSalary).toLocaleString("sv-SE")} kr
+                                      </span>
+                                      <span className="text-[8px] md:text-[8.5px] uppercase font-mono font-bold text-slate-400">
+                                        Snittlön
+                                      </span>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (selectedCompareRoles.includes(job.role)) {
+                                          setSelectedCompareRoles(prev => prev.filter(r => r !== job.role));
+                                        } else {
+                                          setSelectedCompareRoles(prev => [...prev, job.role]);
+                                        }
+                                      }}
+                                      className={`px-2.5 py-1 text-[9.5px] font-extrabold rounded-lg transition-all border select-none cursor-pointer ${
+                                        selectedCompareRoles.includes(job.role)
+                                          ? "bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700 shadow-sm"
+                                          : "bg-white text-indigo-700 border-indigo-200 hover:bg-indigo-50/70"
+                                      }`}
+                                    >
+                                      {selectedCompareRoles.includes(job.role) ? "Tillagd ⚖️" : "Jämför ⚖️"}
+                                    </button>
                                   </div>
                                 </div>
                               );
@@ -3423,42 +3495,62 @@ export default function App() {
                             </div>
 
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                              <h2 className="text-sm md:text-base font-extrabold text-text-main leading-snug tracking-tight">
+                              <h2 className="text-sm md:text-base font-extrabold text-text-main leading-snug tracking-tight flex-1">
                                 {selectedCatalogJob.role}
                               </h2>
-                              {(() => {
-                                const isFavorite = favoriteJobs.includes(selectedCatalogJob.role);
-                                return (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      if (isFavorite) {
-                                        setFavoriteJobs(prev => prev.filter(r => r !== selectedCatalogJob.role));
-                                      } else {
-                                        setFavoriteJobs(prev => [...prev, selectedCatalogJob.role]);
-                                        setSelectedFavoriteJob(selectedCatalogJob.role);
-                                      }
-                                    }}
-                                    className={`px-4.5 py-2 text-xs font-bold rounded-xl transition duration-200 cursor-pointer flex items-center justify-center gap-1.5 select-none shrink-0 ${
-                                      isFavorite 
-                                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/85 hover:bg-emerald-100/50'
-                                        : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm'
-                                    }`}
-                                  >
-                                    {isFavorite ? (
-                                      <>
-                                        <Check className="h-3.5 w-3.5 shrink-0 text-emerald-650" />
-                                        <span>Sparad i profil ✓</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Plus className="h-3.5 w-3.5 shrink-0" />
-                                        <span>Spara i profil</span>
-                                      </>
-                                    )}
-                                  </button>
-                                );
-                              })()}
+                              <div className="flex items-center gap-2 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (selectedCompareRoles.includes(selectedCatalogJob.role)) {
+                                      setSelectedCompareRoles(prev => prev.filter(r => r !== selectedCatalogJob.role));
+                                    } else {
+                                      setSelectedCompareRoles(prev => [...prev, selectedCatalogJob.role]);
+                                    }
+                                  }}
+                                  className={`px-3.5 py-2 text-xs font-extrabold rounded-xl border transition-all select-none cursor-pointer flex items-center justify-center gap-1.5 ${
+                                    selectedCompareRoles.includes(selectedCatalogJob.role)
+                                      ? "bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700 shadow-sm"
+                                      : "bg-white text-indigo-700 border-indigo-200 hover:bg-indigo-50/70"
+                                  }`}
+                                >
+                                  <span>{selectedCompareRoles.includes(selectedCatalogJob.role) ? "Tillagd ⚖️" : "Jämför ⚖️"}</span>
+                                </button>
+
+                                {(() => {
+                                  const isFavorite = favoriteJobs.includes(selectedCatalogJob.role);
+                                  return (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (isFavorite) {
+                                          setFavoriteJobs(prev => prev.filter(r => r !== selectedCatalogJob.role));
+                                        } else {
+                                          setFavoriteJobs(prev => [...prev, selectedCatalogJob.role]);
+                                          setSelectedFavoriteJob(selectedCatalogJob.role);
+                                        }
+                                      }}
+                                      className={`px-3.5 py-2 text-xs font-bold rounded-xl transition duration-200 cursor-pointer flex items-center justify-center gap-1.5 select-none ${
+                                        isFavorite 
+                                          ? 'bg-emerald-55 text-emerald-800 border border-emerald-250 hover:bg-emerald-100/50'
+                                          : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm'
+                                      }`}
+                                    >
+                                      {isFavorite ? (
+                                        <>
+                                          <Check className="h-3.5 w-3.5 shrink-0 text-emerald-650" />
+                                          <span>Sparad ✓</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Plus className="h-3.5 w-3.5 shrink-0" />
+                                          <span>Spara</span>
+                                        </>
+                                      )}
+                                    </button>
+                                  );
+                                })()}
+                              </div>
                             </div>
                           </div>
                                                         {/* Quick statistics widgets - Upgraded to beautiful 4-card grid, 2 in a row, bigger typography & Swedish sources */}
@@ -3748,54 +3840,79 @@ export default function App() {
                     </div>
 
                     {/* Fixed bottom interactive actions footer */}
-                    <div className="absolute bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-slate-150 p-4 flex gap-3 z-10 pb-6 md:pb-4">
-                      {(() => {
-                        const isFavorite = favoriteJobs.includes(selectedCatalogJob.role);
-                        return (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (isFavorite) {
-                                setFavoriteJobs(prev => prev.filter(r => r !== selectedCatalogJob.role));
-                              } else {
-                                setFavoriteJobs(prev => [...prev, selectedCatalogJob.role]);
-                                setSelectedFavoriteJob(selectedCatalogJob.role);
-                              }
-                            }}
-                            className={`flex-1 py-3 text-xs font-bold rounded-xl transition duration-200 cursor-pointer flex items-center justify-center gap-1.5 select-none active:scale-95 border ${
-                              isFavorite 
-                                ? 'bg-emerald-55 text-emerald-800 border-emerald-250 hover:bg-emerald-100/50'
-                                : 'bg-indigo-600 hover:bg-indigo-700 text-white border-transparent shadow-sm'
-                            }`}
-                          >
-                            {isFavorite ? (
-                              <>
-                                <Check className="h-3.5 w-3.5 shrink-0 text-emerald-650" />
-                                <span>Sparad ✓</span>
-                              </>
-                            ) : (
-                              <>
-                                <Plus className="h-3.5 w-3.5 shrink-0" />
-                                <span>Spara</span>
-                              </>
-                            )}
-                          </button>
-                        );
-                      })()}
+                    <div className="absolute bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-slate-150 p-3 flex flex-col gap-2.5 z-10 pb-6 md:pb-4">
+                      <div className="flex gap-2 w-full">
+                        {(() => {
+                          const isFavorite = favoriteJobs.includes(selectedCatalogJob.role);
+                          return (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (isFavorite) {
+                                  setFavoriteJobs(prev => prev.filter(r => r !== selectedCatalogJob.role));
+                                } else {
+                                  setFavoriteJobs(prev => [...prev, selectedCatalogJob.role]);
+                                  setSelectedFavoriteJob(selectedCatalogJob.role);
+                                }
+                              }}
+                              className={`flex-1 py-2.5 text-[11px] font-extrabold rounded-xl transition duration-200 cursor-pointer flex items-center justify-center gap-1 select-none active:scale-95 border ${
+                                isFavorite 
+                                  ? 'bg-emerald-55 text-emerald-800 border-emerald-250 hover:bg-emerald-100/50'
+                                  : 'bg-white hover:bg-indigo-50/50 text-indigo-700 border-indigo-200'
+                              }`}
+                            >
+                              {isFavorite ? (
+                                <>
+                                  <Check className="h-3 w-3 shrink-0 text-emerald-650" />
+                                  <span>Sparad ✓</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Plus className="h-3 w-3 shrink-0" />
+                                  <span>Spara CV</span>
+                                </>
+                              )}
+                            </button>
+                          );
+                        })()}
+
+                        {(() => {
+                          const isComparing = selectedCompareRoles.includes(selectedCatalogJob.role);
+                          return (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (isComparing) {
+                                  setSelectedCompareRoles(prev => prev.filter(r => r !== selectedCatalogJob.role));
+                                } else {
+                                  setSelectedCompareRoles(prev => [...prev, selectedCatalogJob.role]);
+                                }
+                              }}
+                              className={`flex-1 py-2.5 text-[11px] font-extrabold rounded-xl transition duration-200 cursor-pointer flex items-center justify-center gap-1 select-none active:scale-95 border ${
+                                isComparing 
+                                  ? 'bg-amber-100 text-amber-800 border-amber-300'
+                                  : 'bg-indigo-55 text-indigo-700 border-indigo-200'
+                              }`}
+                            >
+                              <span>{isComparing ? "Jämförs ⚖️" : "Jämför ⚖️"}</span>
+                            </button>
+                          );
+                        })()}
+                      </div>
 
                       <button
                         type="button"
                         onClick={() => {
                           const cleanSearch = selectedCatalogJob.role.split('(')[0].trim();
-                          triggerSwedishJobSearch(cleanSearch, "All locations");
+                          triggerSwedishJobSearch(cleanSearch, catalogJobLocation);
+                          setIsMobileCatalogDetailOpen(false); // Close details view so they see listings area immediately
                           setTimeout(() => {
                             document.getElementById("platsbanken-embedded-listings-view")?.scrollIntoView({ behavior: 'smooth' });
-                          }, 100);
+                          }, 150);
                         }}
-                        className="flex-1 py-3 bg-slate-900 hover:bg-slate-850 text-white rounded-xl text-center text-xs font-semibold tracking-wide transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                        className="w-full py-2.5 bg-slate-900 hover:bg-slate-850 text-white rounded-xl text-center text-[11px] font-black tracking-wide transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-95"
                       >
-                        <span>Sök på Platsbanken</span>
-                        <ArrowRight className="h-3.5 w-3.5" />
+                        <span>Sök lediga jobb i {catalogJobLocation} ↗</span>
                       </button>
                     </div>
 
@@ -3859,6 +3976,10 @@ export default function App() {
                 setActiveTab('chat');
                 handleSendChatMessage(undefined, text);
               }}
+              selectedCompareRoles={selectedCompareRoles}
+              setSelectedCompareRoles={setSelectedCompareRoles}
+              isCompareModalOpen={isCompareModalOpen}
+              setIsCompareModalOpen={setIsCompareModalOpen}
             />
           )
         )}
@@ -5493,6 +5614,540 @@ export default function App() {
                   setAuthModalJob(null);
                 }}
               />
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* FLOATING COMPARE BAR */}
+      <AnimatePresence>
+        {activeTab === 'jobs' && selectedCompareRoles.length > 0 && (
+          <motion.div
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            className="fixed bottom-24 left-1/2 -translate-x-1/2 md:translate-x-0 md:bottom-0 md:left-0 md:inset-x-0 z-40 bg-slate-900 md:bg-white/95 text-white md:text-slate-900 backdrop-blur-md md:border-t md:border-slate-200 shadow-2xl md:shadow-[0_-10px_25px_-5px_rgba(15,23,42,0.08)] py-3 px-4 md:py-5 md:px-6 flex items-center justify-between gap-3.5 w-[92%] md:w-auto max-w-[1500px] mx-auto rounded-2xl md:rounded-t-3xl md:rounded-b-none border border-slate-800 md:border-none"
+            id="floating-compare-tray"
+          >
+            <div className="flex items-center gap-2 md:gap-3.5 w-auto">
+              <div className="flex items-center gap-1.5 md:gap-2">
+                <span className="h-5 w-5 md:h-6 md:w-6 rounded-full bg-indigo-500/25 md:bg-indigo-100 flex items-center justify-center text-indigo-300 md:text-indigo-700 text-[10.5px] md:text-xs font-black shrink-0">
+                  {selectedCompareRoles.length}
+                </span>
+                <span className="text-[11px] md:text-xs font-bold whitespace-nowrap">
+                  <span className="hidden md:inline text-slate-800">Yrken valda för jämförelse:</span>
+                  <span className="inline md:hidden text-slate-100">yrken valda</span>
+                </span>
+              </div>
+              <div className="hidden md:flex flex-wrap gap-1.5 max-h-[60px] overflow-y-auto w-full md:w-auto justify-center md:justify-start">
+                {selectedCompareRoles.map((role, idx) => {
+                  const jobName = role.split('(')[0].trim();
+                  return (
+                    <span 
+                      key={idx} 
+                      className="bg-indigo-55 text-indigo-800 font-bold px-2.5 py-1 rounded-full border border-indigo-200 text-[10px] flex items-center gap-1.5 animate-fade-in"
+                    >
+                      <span>{jobName}</span>
+                      <button 
+                        type="button" 
+                        onClick={() => setSelectedCompareRoles(prev => prev.filter(r => r !== role))}
+                        className="text-indigo-400 hover:text-indigo-800 font-extrabold ml-0.5 text-xs cursor-pointer select-none"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setSelectedCompareRoles([])}
+                className="px-3 py-1.5 md:px-4 md:py-2.5 border border-slate-700 md:border-slate-200 text-slate-300 md:text-slate-600 hover:bg-slate-800 md:hover:bg-slate-50 text-[10.5px] md:text-xs font-bold rounded-xl transition cursor-pointer select-none active:scale-95 text-center"
+              >
+                Rensa
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsCompareModalOpen(true)}
+                className="px-3.5 py-1.5 md:px-6 md:py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10.5px] md:text-xs font-black rounded-xl shadow-sm shadow-indigo-600/10 transition cursor-pointer select-none active:scale-95 flex items-center justify-center gap-1"
+              >
+                <span>JÄMFÖR</span>
+                <span className="hidden md:inline">NU</span>
+                <span>⚖️</span>
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* COMPARISON MODAL */}
+      <AnimatePresence>
+        {isCompareModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md" id="compare-modal-overlay">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-white rounded-3xl w-full max-w-5xl max-h-[88vh] flex flex-col overflow-hidden shadow-2xl relative"
+              id="compare-modal-container"
+            >
+              {/* Header */}
+              <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <div className="space-y-1">
+                  <h3 className="font-sans font-black text-slate-900 text-sm md:text-base tracking-tight uppercase flex items-center gap-2">
+                    <span>Jämför Yrkesroller ⚖️</span>
+                  </h3>
+                  <p className="text-[10px] md:text-xs text-slate-500 font-sans">
+                    Analysera löner, utbildningskrav och framtidsutsikter sida vid sida för att välja din optimala karriärväg.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsCompareModalOpen(false)}
+                  className="text-slate-400 hover:text-slate-600 bg-white hover:bg-slate-100 border border-slate-200/60 rounded-full p-2 transition-all cursor-pointer select-none"
+                  aria-label="Stäng jämförelse"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="flex-1 overflow-auto p-4 md:p-6 space-y-5 md:space-y-6">
+                {selectedCompareRoles.length === 0 ? (
+                  <div className="p-16 text-center space-y-3">
+                    <Briefcase className="h-10 w-10 text-slate-350 mx-auto" />
+                    <p className="text-slate-500 text-xs font-semibold">Inga yrken valda för jämförelse just nu.</p>
+                    <button
+                      type="button"
+                      onClick={() => setIsCompareModalOpen(false)}
+                      className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold"
+                    >
+                      Gå till Yrkeskatalogen
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    {/* MOBILE DETAILED VIEW: Grouped by property so no horizontal scrolling or lost context occurs on phones */}
+                    <div className="block md:hidden space-y-4">
+                      
+                      {/* Mobile Header Cards for Selected Roles */}
+                      <div className="bg-indigo-50/40 border border-indigo-100 rounded-2xl p-3.5 space-y-2.5">
+                        <span className="text-[9px] font-mono text-indigo-700 font-black uppercase tracking-wider block">Valda yrkesroller</span>
+                        <div className="grid grid-cols-2 gap-2">
+                          {selectedCompareRoles.map((role, idx) => {
+                            const job = IN_DEMAND_JOBS.find(j => j.role === role);
+                            if (!job) return null;
+                            return (
+                              <div key={idx} className="bg-white border border-indigo-100/60 p-2.5 rounded-xl relative flex flex-col justify-between">
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedCompareRoles(prev => prev.filter(r => r !== role))}
+                                  className="absolute top-1 right-1 text-slate-400 hover:text-red-600 p-1 rounded-full hover:bg-slate-55 cursor-pointer"
+                                  title="Ta bort"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                                <div className="space-y-0.5 pr-4">
+                                  <span className="text-[8.5px] font-mono text-indigo-700 bg-indigo-50 px-1.5 py-0.2 rounded font-bold uppercase block w-fit">
+                                    {job.category}
+                                  </span>
+                                  <h4 className="font-extrabold text-[11px] text-slate-900 leading-tight">
+                                    {job.role.split('(')[0].trim()}
+                                  </h4>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Property Card: Medianlön */}
+                      <div className="bg-slate-50 border border-slate-200/60 p-3.5 rounded-2xl space-y-2.5">
+                        <div className="border-b border-slate-200/50 pb-1.5 flex justify-between items-center">
+                          <span className="font-extrabold text-[10px] text-slate-800 uppercase tracking-wider font-mono">
+                            Snittlön per månad
+                          </span>
+                          <span className="text-[9px] text-slate-400 font-semibold font-mono uppercase">Brutto</span>
+                        </div>
+                        <div className="space-y-2">
+                          {selectedCompareRoles.map((role, idx) => {
+                            const job = IN_DEMAND_JOBS.find(j => j.role === role);
+                            if (!job) return null;
+                            return (
+                              <div key={idx} className="flex items-center justify-between gap-2 text-[11px] bg-white p-2.5 rounded-xl border border-slate-100">
+                                <span className="font-bold text-slate-800 truncate max-w-[60%]">
+                                  {job.role.split('(')[0].trim()}
+                                </span>
+                                <div className="text-right">
+                                  <span className="font-extrabold text-slate-950 font-mono block text-xs">
+                                    {(job.avgSalary).toLocaleString("sv-SE")} kr
+                                  </span>
+                                  <span className="text-[9px] text-slate-500 font-mono block">
+                                    {job.salaryRange}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Property Card: Utbildningstid & Krav */}
+                      <div className="bg-slate-50 border border-slate-200/60 p-3.5 rounded-2xl space-y-2.5">
+                        <div className="border-b border-slate-200/50 pb-1.5">
+                          <span className="font-extrabold text-[10px] text-slate-800 uppercase tracking-wider font-mono block">
+                            Utbildningstid & Krav
+                          </span>
+                        </div>
+                        <div className="space-y-2.5">
+                          {selectedCompareRoles.map((role, idx) => {
+                            const job = IN_DEMAND_JOBS.find(j => j.role === role);
+                            if (!job) return null;
+                            return (
+                              <div key={idx} className="bg-white p-3 rounded-xl border border-slate-100 space-y-1">
+                                <span className="font-extrabold text-slate-900 text-[11px] block">
+                                  {job.role.split('(')[0].trim()}
+                                </span>
+                                <span className="inline-flex font-mono text-[9.5px] font-extrabold text-indigo-755 bg-indigo-50/55 border border-indigo-100/50 px-2 py-0.5 rounded-md">
+                                  ⏳ {getStudyDurationForRole(job.role)}
+                                </span>
+                                <p className="text-slate-500 text-[10px] leading-relaxed">
+                                  {job.educationRequired}
+                                </p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Property Card: Framtid & Tillväxt */}
+                      <div className="bg-slate-50 border border-slate-200/60 p-3.5 rounded-2xl space-y-2.5">
+                        <div className="border-b border-slate-200/50 pb-1.5">
+                          <span className="font-extrabold text-[10px] text-slate-800 uppercase tracking-wider font-mono block">
+                            Framtidsutsikter
+                          </span>
+                        </div>
+                        <div className="space-y-2.5">
+                          {selectedCompareRoles.map((role, idx) => {
+                            const job = IN_DEMAND_JOBS.find(j => j.role === role);
+                            if (!job) return null;
+                            return (
+                              <div key={idx} className="bg-white p-3 rounded-xl border border-slate-100 space-y-1.5">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="font-extrabold text-slate-900 text-[11px] truncate">
+                                    {job.role.split('(')[0].trim()}
+                                  </span>
+                                  <span className={`font-mono text-[8.5px] font-extrabold uppercase px-1.5 py-0.2 rounded-full border shrink-0 ${
+                                    job.demandLevel === "High" 
+                                      ? "bg-emerald-50 text-emerald-800 border-emerald-200" 
+                                      : job.demandLevel === "Medium"
+                                      ? "bg-amber-50 text-amber-800 border-amber-200"
+                                      : "bg-slate-100 text-slate-600 border-slate-200"
+                                  }`}>
+                                    ⚡ {job.demandLevel === "High" ? "Hög" : job.demandLevel === "Medium" ? "Medel" : "Låg"}
+                                  </span>
+                                </div>
+                                <p className="text-slate-950 font-bold text-[10px]">
+                                  {getJobGrowthForRole(job.role)}
+                                </p>
+                                <p className="text-slate-500 text-[10px] leading-relaxed">
+                                  {job.futureOutlook}
+                                </p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Property Card: Viktiga Kompetenser */}
+                      <div className="bg-slate-50 border border-slate-200/60 p-3.5 rounded-2xl space-y-2.5">
+                        <div className="border-b border-slate-200/50 pb-1.5">
+                          <span className="font-extrabold text-[10px] text-slate-800 uppercase tracking-wider font-mono block">
+                            Viktiga Kompetenser
+                          </span>
+                        </div>
+                        <div className="space-y-2.5">
+                          {selectedCompareRoles.map((role, idx) => {
+                            const job = IN_DEMAND_JOBS.find(j => j.role === role);
+                            if (!job) return null;
+                            return (
+                              <div key={idx} className="bg-white p-3 rounded-xl border border-slate-100 space-y-2">
+                                <span className="font-extrabold text-slate-900 text-[11px] block">
+                                  {job.role.split('(')[0].trim()}
+                                </span>
+                                <div className="flex flex-wrap gap-1">
+                                  {job.requiredSkills.map((skill, si) => {
+                                    const userHasIt = profile.skills.some(us => us.toLowerCase().replace(/\s+/g, '') === skill.toLowerCase().replace(/\s+/g, ''));
+                                    return (
+                                      <span 
+                                        key={si} 
+                                        className={`px-1.5 py-0.5 rounded border text-[8px] font-mono font-bold ${
+                                          userHasIt 
+                                            ? "bg-emerald-55 text-emerald-800 border-emerald-200" 
+                                            : "bg-slate-50 text-slate-550 border-slate-150"
+                                        }`}
+                                      >
+                                        {userHasIt ? "✓ " : ""}{skill}
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Property Card: Åtgärder */}
+                      <div className="bg-slate-50 border border-slate-200/60 p-3.5 rounded-2xl space-y-2.5">
+                        <div className="border-b border-slate-200/50 pb-1.5">
+                          <span className="font-extrabold text-[10px] text-slate-800 uppercase tracking-wider font-mono block">
+                            Åtgärd & Utforska
+                          </span>
+                        </div>
+                        <div className="space-y-2">
+                          {selectedCompareRoles.map((role, idx) => {
+                            const job = IN_DEMAND_JOBS.find(j => j.role === role);
+                            if (!job) return null;
+                            return (
+                              <div key={idx} className="flex items-center justify-between gap-3 bg-white p-2.5 rounded-xl border border-slate-100">
+                                <span className="font-extrabold text-slate-800 text-[11px] truncate max-w-[45%]">
+                                  {job.role.split('(')[0].trim()}
+                                </span>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedCatalogJob(job);
+                                      setIsCompareModalOpen(false);
+                                      setIsMobileCatalogDetailOpen(true);
+                                    }}
+                                    className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-850 text-white rounded-lg text-[9.5px] font-black cursor-pointer transition active:scale-95"
+                                  >
+                                    Visa detaljer
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedCompareRoles(prev => prev.filter(r => r !== role))}
+                                    className="px-2 py-1.5 border border-slate-200 hover:bg-slate-55 text-slate-500 rounded-lg text-[9.5px] font-bold cursor-pointer transition"
+                                  >
+                                    Ta bort
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                    </div>
+
+                    {/* DESKTOP COMPARISON TABLE VIEW (remains high-fidelity and unchanged on large screens) */}
+                    <div className="hidden md:block min-w-[650px] md:min-w-0">
+                      {/* Header Columns */}
+                      <div className="grid grid-cols-12 gap-4 border-b border-slate-100 pb-5">
+                        <div className="col-span-3 flex items-center">
+                          <span className="font-bold text-slate-400 uppercase tracking-wider font-mono text-[9px]">
+                            EGENSKAP
+                          </span>
+                        </div>
+                        
+                        {/* Columns for selected compare roles */}
+                        <div className={`col-span-9 grid gap-4`} style={{ gridTemplateColumns: `repeat(${selectedCompareRoles.length}, minmax(0, 1fr))` }}>
+                          {selectedCompareRoles.map((role, idx) => {
+                            const job = IN_DEMAND_JOBS.find(j => j.role === role);
+                            if (!job) return null;
+                            return (
+                              <div key={idx} className="bg-slate-50/50 border border-slate-200/50 p-4 rounded-2xl relative flex flex-col justify-between">
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedCompareRoles(prev => prev.filter(r => r !== role))}
+                                  className="absolute top-2 right-2 text-slate-400 hover:text-red-600 p-1 rounded-full hover:bg-slate-100 cursor-pointer"
+                                  title="Ta bort"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                                <div className="space-y-1 pr-6">
+                                  <span className="text-[9px] font-mono text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded font-bold uppercase">
+                                    {job.category}
+                                  </span>
+                                  <h4 className="font-extrabold text-xs md:text-sm text-slate-900 leading-snug">
+                                    {job.role.split('(')[0].trim()}
+                                  </h4>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Comparison Grid Rows */}
+                      <div className="divide-y divide-slate-100">
+                        
+                        {/* ROW 1: MEDIANLÖN */}
+                        <div className="grid grid-cols-12 gap-4 py-4.5 items-center">
+                          <div className="col-span-3">
+                            <span className="font-bold text-slate-800 text-[11px] font-sans">Snittlön</span>
+                            <span className="block text-[8.5px] font-mono font-bold text-slate-400 uppercase">Per månad (brutto)</span>
+                          </div>
+                          <div className="col-span-9 grid gap-4" style={{ gridTemplateColumns: `repeat(${selectedCompareRoles.length}, minmax(0, 1fr))` }}>
+                            {selectedCompareRoles.map((role, idx) => {
+                              const job = IN_DEMAND_JOBS.find(j => j.role === role);
+                              if (!job) return null;
+                              return (
+                                <div key={idx} className="font-mono text-xs text-slate-900">
+                                  <strong className="text-sm md:text-base font-extrabold text-slate-950 font-sans block">
+                                    {(job.avgSalary).toLocaleString("sv-SE")} kr
+                                  </strong>
+                                  <span className="text-[10px] text-slate-500 block">{job.salaryRange}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* ROW 2: UTBILDNINGSTID & KRAV */}
+                        <div className="grid grid-cols-12 gap-4 py-4.5 items-start">
+                          <div className="col-span-3">
+                            <span className="font-bold text-slate-800 text-[11px] font-sans">Utbildningstid & Krav</span>
+                            <span className="block text-[8.5px] font-mono font-bold text-slate-400 uppercase">Behövs utbildning?</span>
+                          </div>
+                          <div className="col-span-9 grid gap-4" style={{ gridTemplateColumns: `repeat(${selectedCompareRoles.length}, minmax(0, 1fr))` }}>
+                            {selectedCompareRoles.map((role, idx) => {
+                              const job = IN_DEMAND_JOBS.find(j => j.role === role);
+                              if (!job) return null;
+                              return (
+                                <div key={idx} className="space-y-1.5 font-sans text-[11px] leading-relaxed text-slate-700">
+                                  <span className="font-mono text-[10.5px] font-extrabold text-indigo-755 block bg-indigo-50/50 border border-indigo-100/50 px-2 py-1 rounded-lg w-fit">
+                                    ⏳ {getStudyDurationForRole(job.role)}
+                                  </span>
+                                  <p className="text-slate-500 text-[10.5px] font-medium">{job.educationRequired}</p>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* ROW 3: EFTERFRÅGAN & TILLVÄXT */}
+                        <div className="grid grid-cols-12 gap-4 py-4.5 items-start">
+                          <div className="col-span-3">
+                            <span className="font-bold text-slate-800 text-[11px] font-sans">Framtid & Tillväxt</span>
+                            <span className="block text-[8.5px] font-mono font-bold text-slate-400 uppercase">Växer yrket?</span>
+                          </div>
+                          <div className="col-span-9 grid gap-4" style={{ gridTemplateColumns: `repeat(${selectedCompareRoles.length}, minmax(0, 1fr))` }}>
+                            {selectedCompareRoles.map((role, idx) => {
+                              const job = IN_DEMAND_JOBS.find(j => j.role === role);
+                              if (!job) return null;
+                              return (
+                                <div key={idx} className="space-y-1.5 font-sans text-[11px] leading-relaxed text-slate-700">
+                                  <span className={`font-mono text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border block w-fit ${
+                                    job.demandLevel === "High" 
+                                      ? "bg-emerald-50 text-emerald-800 border-emerald-200" 
+                                      : job.demandLevel === "Medium"
+                                      ? "bg-amber-50 text-amber-800 border-amber-200"
+                                      : "bg-slate-100 text-slate-600 border-slate-200"
+                                  }`}>
+                                    ⚡ {job.demandLevel === "High" ? "Hög efterfrågan" : job.demandLevel === "Medium" ? "Medel efterfrågan" : "Låg efterfrågan"}
+                                  </span>
+                                  <p className="text-slate-950 font-extrabold text-[10.5px]">{getJobGrowthForRole(job.role)}</p>
+                                  <p className="text-slate-500 text-[10.5px]">{job.futureOutlook}</p>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* ROW 4: NYCKELKOMPETENSER */}
+                        <div className="grid grid-cols-12 gap-4 py-4.5 items-start">
+                          <div className="col-span-3">
+                            <span className="font-bold text-slate-800 text-[11px] font-sans">Viktiga Kompetenser</span>
+                            <span className="block text-[8.5px] font-mono font-bold text-slate-400 uppercase">Kompetenskarta</span>
+                          </div>
+                          <div className="col-span-9 grid gap-4" style={{ gridTemplateColumns: `repeat(${selectedCompareRoles.length}, minmax(0, 1fr))` }}>
+                            {selectedCompareRoles.map((role, idx) => {
+                              const job = IN_DEMAND_JOBS.find(j => j.role === role);
+                              if (!job) return null;
+                              return (
+                                <div key={idx} className="flex flex-wrap gap-1">
+                                  {job.requiredSkills.map((skill, si) => {
+                                    const userHasIt = profile.skills.some(us => us.toLowerCase().replace(/\s+/g, '') === skill.toLowerCase().replace(/\s+/g, ''));
+                                    return (
+                                      <span 
+                                        key={si} 
+                                        className={`px-2 py-0.5 rounded-md border text-[9px] font-mono font-bold ${
+                                          userHasIt 
+                                            ? "bg-emerald-55 text-emerald-800 border-emerald-200" 
+                                            : "bg-slate-50 text-slate-550 border-slate-150"
+                                        }`}
+                                      >
+                                        {userHasIt ? "✓ " : ""}{skill}
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* ROW 5: ÅTGÄRDER */}
+                        <div className="grid grid-cols-12 gap-4 py-4.5 items-center">
+                          <div className="col-span-3">
+                            <span className="font-bold text-slate-800 text-[11px] font-sans">Åtgärd</span>
+                            <span className="block text-[8.5px] font-mono font-bold text-slate-400 uppercase">Utforska vidare</span>
+                          </div>
+                          <div className="col-span-9 grid gap-4" style={{ gridTemplateColumns: `repeat(${selectedCompareRoles.length}, minmax(0, 1fr))` }}>
+                            {selectedCompareRoles.map((role, idx) => {
+                              const job = IN_DEMAND_JOBS.find(j => j.role === role);
+                              if (!job) return null;
+                              return (
+                                <div key={idx} className="flex gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedCatalogJob(job);
+                                      setIsCompareModalOpen(false);
+                                      setIsMobileCatalogDetailOpen(true);
+                                    }}
+                                    className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-850 text-white rounded-lg text-[10.5px] font-bold transition cursor-pointer select-none"
+                                  >
+                                    Visa Detaljer
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedCompareRoles(prev => prev.filter(r => r !== role))}
+                                    className="px-2 py-1.5 border border-slate-200 hover:bg-slate-55 text-slate-500 rounded-lg text-[10.5px] font-bold transition cursor-pointer select-none"
+                                  >
+                                    Ta bort
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 py-4.5 border-t border-slate-150 flex justify-between items-center bg-slate-50/50">
+                <span className="text-[10px] font-mono font-semibold text-slate-400">
+                  Svensk Yrkesjämförare v1.2 • Baserad på SCB & Arbetsförmedlingens yrkesregister
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsCompareModalOpen(false)}
+                  className="px-4.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition cursor-pointer select-none"
+                >
+                  Stäng Jämförelse
+                </button>
+              </div>
             </motion.div>
           </div>
         )}

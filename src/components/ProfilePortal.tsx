@@ -167,7 +167,106 @@ interface ProfilePortalProps {
   isAuthLoading?: boolean;
   onClearSession?: () => void;
   onStartChatWithLasse?: (text: string) => void;
+  selectedCompareRoles: string[];
+  setSelectedCompareRoles: React.Dispatch<React.SetStateAction<string[]>>;
+  isCompareModalOpen: boolean;
+  setIsCompareModalOpen: (b: boolean) => void;
 }
+
+// Helpers for checking educational and experience requirements
+const requiresNoHigherEducation = (job: { educationRequired: string; role: string }) => {
+  const edu = job.educationRequired.toLowerCase();
+  const role = job.role.toLowerCase();
+  
+  // Explicitly identify roles that do NOT require higher or formal vocational degrees/licenses.
+  // These are entry-level positions where someone can begin working immediately.
+  const lowEducationAllowedKeywords = [
+    "kundtjänst", "butikssäljare", "personlig assistent", "lagerarbetare", "säljare", 
+    "industrimontör", "servitör", "servitris", "hotellreceptionist", "turistguide", 
+    "administratör", "väktare", "skyddsvakt", "assembler", "customer service", 
+    "store associate", "personal assistant", "warehouse", "sales representative", 
+    "waiter", "waitress", "receptionist", "tour guide",
+    "paketsorterare", "terminalarbetare", "lagerplockare", "inventerare", "flyttarbetare", 
+    "godshanterare", "ramparbetare", "chaufförsmedhjälpare", "butiksmedarbetare", 
+    "kassabiträde", "kundvärd", "demonstratör", "butikspåfyllare", "merchandiser", 
+    "kassapersonal", "uthyrningsmedarbetare", "restaurangbiträde", "diskare", 
+    "köksbiträde", "serveringspersonal", "städpersonal", "cafébiträde", "barista", 
+    "snabbmatsmedarbetare", "matleveransbud", "matsalsvärd", "frukostvärd", "cykelbud", 
+    "tidningsdistributör", "budbilsmedhjälpare", "lokalvårdare", "hemstädare", 
+    "fönsterputsare", "fastighetsskötarassistent", "trappstädare", "saneringsmedhjälpare", 
+    "fastighetsvärd", "montör", "produktionsmedarbetare", "fabriksarbetare", 
+    "monteringsarbetare", "paketeringspersonal", "sorteringsarbetare", "återvinningsarbetare", 
+    "operatörsassistent", "boendestödjare", "servicevärd", "bärplockare", 
+    "skördearbetare", "växthusarbetare", "parkarbetare", "skogsplanterare", 
+    "trädgårdsarbetare", "kyrkogårdsarbetare", "renhållningsarbetare", "telefonsäljare", 
+    "mötesbokare", "eventsäljare", "eventpersonal", "garderobiär", "arenapersonal", 
+    "publikvärd", "biljettkontrollant", "väktarelev", "parkeringsvakt", 
+    "hemtjänstbiträde", "avlösare", "ledsagare",
+    "förare", "chaufför", "budbil", "taxiförare", "bussförare", "tågvärd", 
+    "spårvagnsförare", "tunnelbaneförare", "matros", "fiskematros", "kabinpersonal", 
+    "flygvärdinna", "vårdbiträde", "städare", "renhållnings"
+  ];
+
+  if (lowEducationAllowedKeywords.some(kw => role.includes(kw))) {
+    return true;
+  }
+
+  // Any role mentioning academic degrees, professional licenses, or vocational training lines
+  const universityOrVocationalKeywords = [
+    "kandidat", "bachelor", "master", "doktor", "ph.d", "examen (3", "examen (4", "examen (5", 
+    "universitet", "högskola", "civilingenjör", "högskoleingenjör", "läkarprogrammet", 
+    "lärare", "sjuksköterska", "sjuksköterske", "psykolog", "specialistläkare", "tandläkare", 
+    "arkitekt", "ingenjör", "forskare", "professor", "lektor", "socionom", "advokat", 
+    "åklagare", "domare", "psykoterapeut", "rektor", "biomedicinsk", "farmakologi",
+    "apotekare", "pedagog", "vård- och omsorgsprogrammet", "programmet", "lärarutbildning", 
+    "gymnasieskolans", "vvs-", "svetsare", "snickare", "träarbetare", "el- och energiprogrammet",
+    "industriteknisk utbildning", "yh-utbildning", "yrkeshögskola", "yh-examen"
+  ];
+
+  if (universityOrVocationalKeywords.some(kw => edu.includes(kw) || role.includes(kw))) {
+    return false;
+  }
+
+  const lowerEduPhrases = ["ingen formell", "inget formellt", "krävs ej", "ej krav", "behövs ej", "ingen formell eftergymnasial"];
+  const isExplicitlyNoEdu = lowerEduPhrases.some(phrase => edu.includes(phrase));
+
+  if (isExplicitlyNoEdu) {
+    const strictExclusions = ["legitimation", "yrkeslegitimation", "programmet", "lärling", "examen"];
+    if (strictExclusions.some(kw => edu.includes(kw))) {
+      return false;
+    }
+    return true;
+  }
+
+  return false;
+};
+
+const requiresNoExperience = (job: { educationRequired: string; role: string }) => {
+  const edu = job.educationRequired.toLowerCase();
+  const role = job.role.toLowerCase();
+  
+  // Jobs that DO require apprentice years (lärling), vocational licensing, or leadership/senior statuses
+  const expKeywords = [
+    "erfarenhet", "erfaren", "yrkeserfarenhet", "lärling", "lärlingstid", "gesäll", "yrkesbevis",
+    "mångårig", "många års", "lång erfarenhet", "5+ år", "3+ år", "7+ år", "ledande", 
+    "specialist", "arkitekt", "chef", "senior", "doktorsexamen", "postdoktor", "revisorsinspektionen",
+    "starkt meriterande med erfarenhet", "kräver erfarenhet", "tidigare erfarenhet"
+  ];
+  
+  if (expKeywords.some(kw => edu.includes(kw) || role.includes(kw))) {
+    if (edu.includes("ingen erfarenhet") || edu.includes("inget krav på erfarenhet") || edu.includes("erfarenhet är inget krav")) {
+      return true;
+    }
+    return false;
+  }
+  
+  const seniorTitles = ["ledande", "chef", "senior", "specialist", "revisor", "arkitekt", "manager", "planner", "ingenjör", "engineer"];
+  if (seniorTitles.some(t => role.includes(t))) {
+    return false;
+  }
+  
+  return true;
+};
 
 export default function ProfilePortal({
   profile,
@@ -203,7 +302,11 @@ export default function ProfilePortal({
   currentUser,
   isAuthLoading,
   onClearSession,
-  onStartChatWithLasse
+  onStartChatWithLasse,
+  selectedCompareRoles,
+  setSelectedCompareRoles,
+  isCompareModalOpen,
+  setIsCompareModalOpen
 }: ProfilePortalProps) {
   
   // Sectioned layout tracker tab: 'saved-careers' | 'active-progression' | 'profile-details' | 'shortage-matching'
@@ -215,6 +318,16 @@ export default function ProfilePortal({
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [profileCustomLicenseInput, setProfileCustomLicenseInput] = useState("");
   const [selectedShortageIndustry, setSelectedShortageIndustry] = useState<string>("Alla");
+  const [shortageProfileOnly, setShortageProfileOnly] = useState<boolean>(false);
+  const [shortageNoEduRequired, setShortageNoEduRequired] = useState<boolean>(false);
+  const [shortageNoExpRequired, setShortageNoExpRequired] = useState<boolean>(false);
+  const [shortageMinSalary, setShortageMinSalary] = useState<number>(20000);
+  const [shortageVisibleCount, setShortageVisibleCount] = useState<number>(10);
+
+  // Reset pagination count when filters are modified
+  useEffect(() => {
+    setShortageVisibleCount(10);
+  }, [selectedShortageIndustry, shortageProfileOnly, shortageNoEduRequired, shortageNoExpRequired, shortageMinSalary]);
 
   // States and hooks for Custom AI Career Roadmap builder
   const [guidanceLoading, setGuidanceLoading] = useState(false);
@@ -920,7 +1033,7 @@ export default function ProfilePortal({
           className={`flex items-center gap-2.5 p-3.5 rounded-2xl border text-xs font-bold transition-all duration-200 cursor-pointer shadow-xs ${
             profileSubTab === 'saved-careers'
               ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-600/10'
-              : 'bg-white border-slate-250 text-slate-700 hover:bg-slate-50 hover:border-slate-350'
+              : 'bg-white border-slate-250 text-slate-705 hover:bg-slate-50 hover:border-slate-350'
           }`}
           id="btn-subtab-saved-careers"
         >
@@ -939,7 +1052,7 @@ export default function ProfilePortal({
           className={`flex items-center gap-2.5 p-3.5 rounded-2xl border text-xs font-bold transition-all duration-200 cursor-pointer shadow-xs ${
             profileSubTab === 'active-progression'
               ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-600/10'
-              : 'bg-white border-slate-250 text-slate-700 hover:bg-slate-50 hover:border-slate-350'
+              : 'bg-white border-slate-250 text-slate-705 hover:bg-slate-50 hover:border-slate-350'
           }`}
           id="btn-subtab-active-progression"
         >
@@ -958,7 +1071,7 @@ export default function ProfilePortal({
           className={`flex items-center gap-2.5 p-3.5 rounded-2xl border text-xs font-bold transition-all duration-200 cursor-pointer shadow-xs ${
             profileSubTab === 'shortage-matching'
               ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-600/10'
-              : 'bg-white border-slate-250 text-slate-700 hover:bg-slate-50 hover:border-slate-350'
+              : 'bg-white border-slate-250 text-slate-705 hover:bg-slate-50 hover:border-slate-350'
           }`}
           id="btn-subtab-shortage-matching"
         >
@@ -977,7 +1090,7 @@ export default function ProfilePortal({
           className={`flex items-center gap-2.5 p-3.5 rounded-2xl border text-xs font-bold transition-all duration-200 cursor-pointer shadow-xs ${
             profileSubTab === 'profile-details'
               ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-600/10'
-              : 'bg-white border-slate-250 text-slate-700 hover:bg-slate-50 hover:border-slate-350'
+              : 'bg-white border-slate-250 text-slate-705 hover:bg-slate-50 hover:border-slate-350'
           }`}
           id="btn-subtab-profile-details"
         >
@@ -1082,6 +1195,9 @@ export default function ProfilePortal({
 
                         <div className="flex items-center gap-1 md:gap-2 text-right shrink-0">
                           {isSelected && <span className="h-1.5 w-1.5 md:h-2 md:w-2 rounded-full bg-indigo-500 animate-pulse shrink-0"></span>}
+                          
+
+
                           <button
                             type="button"
                             onClick={(e) => {
@@ -3784,100 +3900,213 @@ export default function ProfilePortal({
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -15 }}
-        transition={{ duration: 0.18 }}
-        className="w-full animate-fade-in"
+        transition={{ duration: 0.2 }}
+        className="space-y-6"
       >
-        {/* BLOCK 3: MATCHA BRISTYRKEN */}
-        <div 
-          className="bg-slate-50/50 border border-slate-200 p-5 rounded-3xl space-y-5 animate-fade-in w-full" 
-          id="profile-shortage-matching-panel"
-        >
-          <div className="flex items-center justify-between border-b border-slate-250 pb-3">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">🔥</span>
-              <h3 className="font-extrabold text-sm uppercase text-slate-800 tracking-wide font-mono">Matcha Bristyrken</h3>
-            </div>
-            <span className="bg-white font-mono text-[9.5px] font-black text-rose-700 border border-rose-100 px-2 py-0.5 rounded-md">
-              Bristyrken
-            </span>
-          </div>
-
-          <div className="space-y-6 w-full">
+        <div className="space-y-6 w-full font-sans">
             
-            {/* Left Column: Stats & Industry Filters */}
-            <div className="space-y-6">
-              {/* Shortage Intro Statement */}
-              <div className="bg-gradient-to-br from-indigo-900 to-indigo-950 text-white p-6 rounded-2xl shadow-md border border-indigo-800 space-y-3 relative overflow-hidden">
-                <div className="absolute right-[-15px] bottom-[-15px] text-indigo-800/10 text-8xl font-black font-display pointer-events-none select-none">
-                  SE
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xl">🔥</span>
-                  <span className="text-[10px] bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 px-2 py-0.5 rounded-md font-mono font-bold uppercase">
-                    KRITISK ARBETSKRAFTBRIST
-                  </span>
-                </div>
-                <h3 className="text-sm font-black font-display tracking-tight leading-snug">
-                  Arbetsmarknadens Största Behov
-                </h3>
-                <p className="text-[11px] text-indigo-200 leading-relaxed">
-                  Det enklaste sättet att göra karriär eller skola om sig är att satsa på yrken där arbetsgivare letar febrilt efter personal. Dessa kallas <strong>bristyrken</strong>.
-                </p>
-                <p className="text-[11px] text-indigo-300 leading-relaxed italic">
-                  Lasse har jämfört dina registrerade kompetenser med officiella krav samt annonser i Platsbanken för att hitta dina personliga matchningar.
-                </p>
+            {/* Shortage Intro Statement (Full-width, polished) */}
+            <div className="bg-gradient-to-br from-indigo-900 to-indigo-950 text-white p-6 rounded-3xl shadow-md border border-indigo-850 space-y-2 relative overflow-hidden">
+              <div className="absolute right-[-15px] bottom-[-15px] text-indigo-800/10 text-8xl font-black font-display pointer-events-none select-none">
+                SE
               </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🔥</span>
+                <span className="text-[10px] bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 px-2 py-0.5 rounded-md font-mono font-bold uppercase animate-pulse">
+                  KRITISK ARBETSKRAFTBRIST
+                </span>
+              </div>
+              <h3 className="text-sm font-black font-display tracking-tight leading-snug">
+                Arbetsmarknadens Största Behov
+              </h3>
+              <p className="text-[11.5px] text-indigo-150 leading-relaxed max-w-3xl">
+                Det enklaste sättet att göra karriär eller skola om sig är att satsa på yrken där arbetsgivare letar febrilt efter personal. Dessa kallas <strong className="text-white font-bold">bristyrken</strong>. Lasse har matchat din profil mot officiella krav samt Platsbankens annonser.
+              </p>
+            </div>
 
-              {/* Industry Filter Panel */}
-              <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-[0_8px_30px_rgba(15,23,42,0.015)] space-y-4">
+            {/* Combined Gridbox Filter Panel for all controls */}
+            <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-[0_8px_30px_rgba(15,23,42,0.012)] space-y-5 w-full">
+              <div className="border-b border-slate-100 pb-3 flex flex-wrap items-center justify-between gap-2.5">
                 <div>
-                  <h4 className="font-extrabold text-xs uppercase text-slate-800 tracking-wide font-display">Filtrera efter bransch</h4>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Avgränsa matchningen till din önskade sektor</p>
+                  <h4 className="font-extrabold text-xs uppercase text-slate-800 tracking-wide font-display">Matchningsmotor & filter</h4>
+                  <p className="text-[10px] text-slate-400 mt-0.5 font-sans">Välj branscher, kravnivåer och löneanspråk på en och samma rad</p>
                 </div>
-
-                <div className="flex flex-col gap-1.5">
-                  {["Alla", "Teknik", "Hälsa", "Utbildning", "Säkerhet / Logistik", "Ekonomi"].map((categoryName) => {
-                    const isActive = selectedShortageIndustry === categoryName;
-                    return (
-                      <button
-                        key={categoryName}
-                        type="button"
-                        onClick={() => setSelectedShortageIndustry(categoryName)}
-                        className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs transition flex justify-between items-center cursor-pointer ${
-                          isActive
-                            ? 'bg-indigo-50 text-indigo-900 border border-indigo-150 font-bold'
-                            : 'bg-white border border-slate-150 hover:bg-slate-50 text-slate-600'
-                        }`}
-                      >
-                        <span className="font-sans">{categoryName === "Alla" ? "Alla branscher" : categoryName}</span>
-                        {isActive && <Check className="h-4 w-4 shrink-0 text-indigo-600" />}
-                      </button>
-                    );
-                  })}
-                </div>
+                
+                {/* Reset button shown if filters are active */}
+                {(selectedShortageIndustry !== "Alla" || shortageProfileOnly || shortageNoEduRequired || shortageNoExpRequired || shortageMinSalary > 20000) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedShortageIndustry("Alla");
+                      setShortageProfileOnly(false);
+                      setShortageNoEduRequired(false);
+                      setShortageNoExpRequired(false);
+                      setShortageMinSalary(20000);
+                    }}
+                    className="text-[10.5px] text-indigo-650 hover:text-white font-black hover:bg-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-xl border border-indigo-100 transition-all cursor-pointer shadow-3xs"
+                  >
+                    <span>🔄 Återställ alla filter</span>
+                  </button>
+                )}
               </div>
 
-              {/* Strategic Advice Box */}
-              <div className="bg-slate-50 border border-slate-200 p-6 rounded-2xl space-y-4 text-slate-700">
-                <h4 className="font-extrabold text-xs uppercase text-slate-800 tracking-wide font-mono flex items-center gap-1.5 select-none">
-                  <span>💡</span> Tre skäl att välja bristyrken
-                </h4>
-                <div className="space-y-3 text-[11px] leading-relaxed">
-                  <div className="space-y-0.5">
-                    <strong className="text-slate-900 font-bold block">1. Säkrare anställning</strong>
-                    <span className="text-slate-500 block">Även under svåra ekonomiska tider behåller dessa yrken hög efterfrågan.</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {/* Grid Element 1: Bransch/Sektor */}
+                <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-150/55 space-y-3 flex flex-col justify-between">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] bg-slate-200 text-slate-600 font-mono font-bold px-1.5 py-0.5 rounded">1</span>
+                      <h5 className="text-[11px] font-extrabold text-slate-700">Välj branschområde</h5>
+                    </div>
+                    <p className="text-[9.5px] text-slate-400 leading-snug">Avgränsa matchningen till din sektor</p>
                   </div>
-                  <div className="space-y-0.5">
-                    <strong className="text-slate-900 font-bold block">2. Schyssta anställningsvillkor</strong>
-                    <span className="text-slate-500 block">Eftersom arbetsgivare kämpar om personal erbjuds ofta kollektivavtal och lönepremier.</span>
+                  <div className="grid grid-cols-2 gap-1.5 pt-2 max-h-[192px] overflow-y-auto pr-1.5 scrollbar-thin scrollbar-thumb-slate-200">
+                    {["Alla", "Teknik", "Hälsa", "Utbildning", "Säkerhet / Logistik", "Ekonomi", "Bygg & Anläggning", "Industri & Tillverkning", "Försäljning & Marknadsföring", "Service & Handel", "Hotell, Restaurang & Turism", "Transport", "Juridik & Offentlig Förvaltning", "Media & Kreativa Yrken", "Naturbruk & Miljö", "Omsorg & Socialt Arbete"].map((categoryName) => {
+                      const isActive = selectedShortageIndustry === categoryName;
+                      return (
+                        <button
+                          key={categoryName}
+                          type="button"
+                          onClick={() => setSelectedShortageIndustry(categoryName)}
+                          className={`px-2 py-2 rounded-xl text-[10px] font-bold text-center border transition-all cursor-pointer ${
+                            isActive
+                              ? "bg-indigo-600 border-indigo-600 text-white shadow-xs"
+                              : "bg-white border-slate-200 hover:bg-slate-100 hover:border-slate-300 text-slate-650 hover:text-slate-900"
+                          }`}
+                        >
+                          {categoryName === "Alla" ? "Alla branscher" : categoryName}
+                        </button>
+                      );
+                    })}
                   </div>
-                  <div className="space-y-0.5">
-                    <strong className="text-slate-900 font-bold block">3. Snabba studiealternativ</strong>
-                    <span className="text-slate-500 block">Yrkeshögskolor (YH) har 1–2 år långa program som är direkt anpassade för dessa branscher.</span>
+                </div>
+
+                {/* Grid Element 2: Profil & kravfilter */}
+                <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-150/55 space-y-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] bg-slate-200 text-slate-600 font-mono font-bold px-1.5 py-0.5 rounded">2</span>
+                      <h5 className="text-[11px] font-extrabold text-slate-700">Profil & Kravpålägg</h5>
+                    </div>
+                    <p className="text-[9.5px] text-slate-400 leading-snug">Filtrera utifrån profil samt utbildningsnivå</p>
+                  </div>
+                  <div className="space-y-2 pt-1 font-sans">
+                    {/* Toggle 1: Utifrån min profil */}
+                    <label className="flex items-start gap-2.5 cursor-pointer select-none group">
+                      <input 
+                        type="checkbox"
+                        checked={shortageProfileOnly}
+                        onChange={(e) => setShortageProfileOnly(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                      />
+                      <div className="space-y-0.5">
+                        <span className="text-[11px] font-bold text-slate-700 group-hover:text-indigo-600 transition-colors">Utifrån min profil</span>
+                        <p className="text-[9.5px] text-slate-450 leading-tight">Matchar mina registrerade kunskaper</p>
+                      </div>
+                    </label>
+
+                    {/* Toggle 2: Inget krav på högskoleutbildning */}
+                    <label className="flex items-start gap-2.5 cursor-pointer select-none group pt-2 border-t border-slate-150/40">
+                      <input 
+                        type="checkbox"
+                        checked={shortageNoEduRequired}
+                        onChange={(e) => setShortageNoEduRequired(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                      />
+                      <div className="space-y-0.5">
+                        <span className="text-[11px] font-bold text-slate-700 group-hover:text-indigo-600 transition-colors">Arbete utan utbildningskrav</span>
+                        <p className="text-[9.5px] text-slate-455 leading-tight">Yrken som ej kräver högskoleexamen</p>
+                      </div>
+                    </label>
+
+                    {/* Toggle 3 : Inget krav på erfarenhet */}
+                    <label className="flex items-start gap-2.5 cursor-pointer select-none group pt-2 border-t border-slate-150/40">
+                      <input 
+                        type="checkbox"
+                        checked={shortageNoExpRequired}
+                        onChange={(e) => setShortageNoExpRequired(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                      />
+                      <div className="space-y-0.5">
+                        <span className="text-[11px] font-bold text-slate-700 group-hover:text-indigo-600 transition-colors">Arbete utan erfarenhetskrav</span>
+                        <p className="text-[9.5px] text-slate-455 leading-tight">Ypperligt för karriärväxlare</p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Grid Element 3: Mellanlön slider */}
+                <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-150/55 space-y-3 flex flex-col justify-between font-sans">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] bg-slate-200 text-slate-600 font-mono font-bold px-1.5 py-0.5 rounded">3</span>
+                      <h5 className="text-[11px] font-extrabold text-slate-700">Löneanspråk / Medellön</h5>
+                    </div>
+                    <p className="text-[9.5px] text-slate-400 leading-snug">Anpassa lägsta snittlön för yrket</p>
+                  </div>
+                  <div className="space-y-2.5 pt-1.5">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-550">Lägsta lön:</span>
+                      <span className="bg-indigo-50 text-indigo-700 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border border-indigo-100">
+                        {shortageMinSalary.toLocaleString("sv-SE")} kr
+                      </span>
+                    </div>
+
+                    <input
+                      type="range"
+                      min="20000"
+                      max="80000"
+                      step="2000"
+                      value={shortageMinSalary}
+                      onChange={(e) => setShortageMinSalary(Number(e.target.value))}
+                      className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 focus:outline-none"
+                    />
+
+                    {/* Quick presets */}
+                    <div className="flex flex-wrap gap-1">
+                      {[25000, 35000, 45000, 55000, 65000].map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => setShortageMinSalary(preset)}
+                          className={`text-[9.5px] font-mono font-bold px-1.5 py-0.5 rounded transition-all cursor-pointer ${
+                            shortageMinSalary === preset
+                              ? 'bg-indigo-600 text-white shadow-3xs font-black'
+                              : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100 hover:text-slate-700'
+                          }`}
+                        >
+                          {preset / 1000}k+
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
+
+            {/* Strategic Advice Box */}
+            <div className="bg-slate-50 border border-slate-200 p-5 rounded-3xl space-y-4 text-slate-700">
+              <h4 className="font-extrabold text-xs uppercase text-slate-800 tracking-wide font-mono flex items-center gap-1.5 select-none">
+                <span>💡</span> Tre skäl att matcha mot bristyrken
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-[10.5px] leading-relaxed">
+                <div className="space-y-0.5 bg-white p-3.5 rounded-2xl border border-slate-150/65">
+                  <strong className="text-slate-900 font-bold block">1. Säkrare anställning</strong>
+                  <span className="text-slate-500 block">Även under svåra ekonomiska tider behåller dessa yrken mycket hög efterfrågan.</span>
+                </div>
+                <div className="space-y-0.5 bg-white p-3.5 rounded-2xl border border-slate-150/65">
+                  <strong className="text-slate-900 font-bold block">2. Gynnsamma anställningsvillkor</strong>
+                  <span className="text-slate-500 block">Eftersom arbetsgivare kämpar om personal erbjuds ofta kollektivavtal och lönepremier.</span>
+                </div>
+                <div className="space-y-0.5 bg-white p-3.5 rounded-2xl border border-slate-150/65 font-sans">
+                  <strong className="text-slate-900 font-bold block">3. Snabba YH-utbildningar</strong>
+                  <span className="text-slate-500 block">Yrkeshögskolor (YH) har 1–2 år korta och kostnadsfria program som är skräddarsydda efter bristbehoven.</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Strategic Advice Divider */}
+            <div className="border-t border-slate-200/80 my-4" />
 
             {/* Right Column: Matched Shortage occupations */}
             <div className="space-y-5 w-full">
@@ -3931,196 +4160,271 @@ export default function ProfilePortal({
                   };
                 }).sort((a, b) => b.matchPct - a.matchPct);
 
-                if (mappedShortageJobs.length === 0) {
+                // Apply advanced filterpålägg
+                const filteredShortageJobs = mappedShortageJobs.filter(job => {
+                  if (shortageProfileOnly) {
+                    if (job.matchPct < 52 && job.hasSkills.length === 0) {
+                      return false;
+                    }
+                  }
+                  if (shortageNoEduRequired) {
+                    if (!requiresNoHigherEducation(job)) {
+                      return false;
+                    }
+                  }
+                  if (shortageNoExpRequired) {
+                    if (!requiresNoExperience(job)) {
+                      return false;
+                    }
+                  }
+                  if (job.avgSalary < shortageMinSalary) {
+                    return false;
+                  }
+                  return true;
+                });
+
+                if (filteredShortageJobs.length === 0) {
                   return (
-                    <div className="bg-white border border-slate-200 p-12 rounded-2xl shadow-xs text-center space-y-3">
+                    <div className="bg-white border border-slate-200 p-12 rounded-3xl shadow-xs text-center space-y-3 font-sans w-full">
                       <Briefcase className="h-10 w-10 text-slate-300 mx-auto" />
-                      <p className="text-slate-505 text-xs font-semibold">Inga yrken hittades under filtreringen.</p>
-                      <p className="text-[11px] text-slate-400">Prova att byta bransch i listan till vänster för att se fler bristyrken.</p>
+                      <p className="text-slate-505 text-sm font-semibold">Inga yrken matchar dina filterkrav.</p>
+                      <p className="text-[11.5px] text-slate-400">Prova att sänka lönekravet eller ändra de bockbara extrafiltren för att se fler utmärkta yrkesval.</p>
                     </div>
                   );
                 }
 
+                // Slice list for pagination
+                const paginatedJobs = filteredShortageJobs.slice(0, shortageVisibleCount);
+
                 return (
-                  <div className="space-y-4">
+                  <div className="space-y-6 w-full">
                     <div className="flex justify-between items-center text-[11px] font-mono pl-1 text-slate-400 uppercase tracking-widest select-none">
                       <span>Yrken sorterade efter din profilmatchning</span>
-                      <span>{mappedShortageJobs.length} matchande bristyrken</span>
+                      <span>{filteredShortageJobs.length} matchande bristyrken</span>
                     </div>
 
-                    {mappedShortageJobs.map((job) => {
-                      const isFavorited = favoriteJobs.includes(job.role);
-                      
-                      // Match styling
-                      let badgeColorClass = "bg-rose-50 text-rose-800 border-rose-200/50";
-                      let ratingText = "Utvecklingspotentiell";
-                      if (job.matchPct >= 70) {
-                        badgeColorClass = "bg-emerald-50 text-emerald-800 border-emerald-300/50";
-                        ratingText = "Utmärkt Matchning";
-                      } else if (job.matchPct >= 45) {
-                        badgeColorClass = "bg-indigo-50 text-indigo-800 border-indigo-200/50";
-                        ratingText = "God Matchning";
-                      }
+                    {/* TWO IN A ROW GRID LAYOUT */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-left w-full">
+                      {paginatedJobs.map((job) => {
+                        const isFavorited = favoriteJobs.includes(job.role);
+                        const isSelectedForCompare = selectedCompareRoles.includes(job.role);
+                        
+                        // Match styling
+                        let badgeColorClass = "bg-rose-50 text-rose-800 border-rose-200/50";
+                        let ratingText = "Utvecklingspotentiell";
+                        if (job.matchPct >= 70) {
+                          badgeColorClass = "bg-emerald-50 text-emerald-800 border-emerald-300/50";
+                          ratingText = "Utmärkt Matchning";
+                        } else if (job.matchPct >= 45) {
+                          badgeColorClass = "bg-indigo-50 text-indigo-800 border-indigo-200/50";
+                          ratingText = "God Matchning";
+                        }
 
-                      return (
-                        <div
-                          key={job.role}
-                          className="bg-white border border-slate-200 p-5 md:p-6 rounded-2xl shadow-[0_4px_20px_rgba(15,23,42,0.01)] space-y-4 hover:border-slate-300 transition-all"
-                        >
-                          {/* Title block */}
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div className="space-y-1">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <span className={`text-[10px] px-2 py-0.5 rounded-lg font-mono font-bold border ${badgeColorClass}`}>
-                                  {ratingText} ({job.matchPct}%)
-                                </span>
-                                <span className="text-[10px] bg-slate-100 text-slate-705 px-2 py-0.5 rounded-lg border border-slate-200/65 font-mono">
-                                  {job.category}
-                                </span>
+                        return (
+                          <div
+                            key={job.role}
+                            className="bg-white border border-slate-200 p-5 md:p-6 rounded-3xl shadow-[0_4px_20px_rgba(15,23,42,0.01)] space-y-4 hover:border-slate-300 transition-all flex flex-col justify-between"
+                          >
+                            <div className="space-y-4">
+                              {/* Title block */}
+                              <div className="flex flex-wrap items-start justify-between gap-3">
+                                <div className="space-y-1">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span className={`text-[10px] px-2 py-0.5 rounded-lg font-mono font-bold border ${badgeColorClass}`}>
+                                      {ratingText} ({job.matchPct}%)
+                                    </span>
+                                    <span className="text-[10px] bg-slate-100 text-slate-705 px-2 py-0.5 rounded-lg border border-slate-200/65 font-mono">
+                                      {job.category}
+                                    </span>
+                                  </div>
+                                  <h4 className="text-sm font-black text-slate-900 tracking-tight leading-snug">
+                                    {job.role}
+                                  </h4>
+                                </div>
+
+                                <div className="text-right text-[11px] font-mono shrink-0">
+                                  <span className="text-slate-400 block uppercase font-extrabold text-[9px]">Medellön</span>
+                                  <strong className="text-sm font-black text-slate-900 block mt-0.5 font-sans">
+                                    {job.avgSalary.toLocaleString("sv-SE")} SEK/mån
+                                  </strong>
+                                </div>
                               </div>
-                              <h4 className="text-sm font-black text-slate-900 tracking-tight leading-snug">
-                                {job.role}
-                              </h4>
-                            </div>
 
-                            <div className="text-right text-[11px] font-mono shrink-0">
-                              <span className="text-slate-400 block uppercase font-extrabold">Medellön</span>
-                              <strong className="text-sm font-black text-slate-900 block mt-0.5 font-sans">
-                                {job.avgSalary.toLocaleString("sv-SE")} SEK/mån
-                              </strong>
-                            </div>
-                          </div>
-
-                          {/* Quick description */}
-                          <p className="text-[11.5px] text-slate-500 leading-relaxed border-l-2 border-indigo-150 pl-3">
-                            {job.futureOutlook}
-                          </p>
-
-                          {/* Details Bar */}
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 bg-slate-50 p-3.5 rounded-xl border border-slate-150/60">
-                            {/* Education requirement */}
-                            <div className="space-y-1">
-                              <span className="text-[9px] text-slate-400 font-mono font-bold uppercase block flex items-center gap-1">
-                                <GraduationCap className="h-3.5 w-3.5 text-slate-400 mr-0.5" /> Utbildningskrav:
-                              </span>
-                              <p className="text-[10.5px] text-slate-700 font-semibold leading-relaxed">
-                                {job.educationRequired}
+                              {/* Quick description */}
+                              <p className="text-[11.5px] text-slate-500 leading-relaxed border-l-2 border-indigo-150 pl-3">
+                                {job.futureOutlook}
                               </p>
-                            </div>
 
-                            {/* Market ads count */}
-                            <div className="space-y-1">
-                              <span className="text-[9px] text-slate-400 font-mono font-bold uppercase block">
-                                Annonser i Sverige:
-                              </span>
-                              <p className="text-[10.5px] text-slate-700 font-semibold leading-relaxed">
-                                För närvarande cirka <strong>{job.activeAds.toLocaleString()} st</strong> aktiva annonser i Platsbanken. Marknadsbehovet har rankats som <strong>Mycket stort</strong>.
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Key Skills breakdown */}
-                          <div className="space-y-2">
-                            <span className="text-[9px] text-slate-400 font-mono font-bold uppercase tracking-wider block">
-                              Nyckelkompetenser som krävs för yrket:
-                            </span>
-                            <div className="flex flex-wrap gap-1.5">
-                              {job.requiredSkills.map((skill) => {
-                                const hasIt = job.hasSkills.includes(skill);
-                                return (
-                                  <span
-                                    key={skill}
-                                    className={`px-2.5 py-1 rounded-md text-[10px] font-bold flex items-center gap-1 border transition-colors ${
-                                      hasIt
-                                        ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                                        : "bg-slate-50 text-slate-400 border-slate-150/70"
-                                    }`}
-                                  >
-                                    {hasIt ? (
-                                      <span className="text-emerald-600 font-black">✓</span>
-                                    ) : (
-                                      <span className="text-slate-350 font-serif">?</span>
-                                    )}
-                                    <span>{skill}</span>
+                              {/* Details Bar */}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 bg-slate-50 p-3.5 rounded-xl border border-slate-150/60 text-slate-700">
+                                {/* Education requirement */}
+                                <div className="space-y-1">
+                                  <span className="text-[9px] text-slate-400 font-mono font-bold uppercase block flex items-center gap-1">
+                                    <GraduationCap className="h-3.5 w-3.5 text-slate-400 mr-0.5" /> Utbildningskrav:
                                   </span>
-                                );
-                              })}
-                            </div>
-                          </div>
+                                  <p className="text-[10.5px] text-slate-700 font-semibold leading-relaxed">
+                                    {job.educationRequired}
+                                  </p>
+                                </div>
 
-                          {/* Matching summary alert */}
-                          <div className="flex justify-between items-center gap-4 pt-3 border-t border-slate-100 flex-wrap">
-                            <span className="text-[10.5px] text-slate-500 font-sans">
-                              {job.missingSkills.length === 0 ? (
-                                <span className="text-emerald-700 font-extrabold flex items-center gap-1">
-                                  <span>✓</span> Du matchar alla nyckelkompetenser för detta yrke!
+                                {/* Market ads count */}
+                                <div className="space-y-1">
+                                  <span className="text-[9px] text-slate-400 font-mono font-bold uppercase block">
+                                    Annonser på Platsbanken:
+                                  </span>
+                                  <p className="text-[10.5px] text-slate-700 font-semibold leading-relaxed">
+                                    <strong>{job.activeAds.toLocaleString()} st</strong> aktiva annonser.
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Key Skills breakdown */}
+                              <div className="space-y-2">
+                                <span className="text-[9px] text-slate-400 font-mono font-bold uppercase tracking-wider block">
+                                  Nyckelkompetenser som krävs för yrket:
                                 </span>
-                              ) : (
-                                <span>Du saknar <strong>{job.missingSkills.length} st</strong> nyckelkompetenser för komplett matchning.</span>
-                              )}
-                            </span>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {job.requiredSkills.map((skill) => {
+                                    const hasIt = job.hasSkills.includes(skill);
+                                    return (
+                                      <span
+                                        key={skill}
+                                        className={`px-2.5 py-1 rounded-md text-[10px] font-bold flex items-center gap-1 border transition-colors ${
+                                          hasIt
+                                            ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                                            : "bg-slate-50 text-slate-400 border-slate-150/70"
+                                        }`}
+                                      >
+                                        {hasIt ? (
+                                          <span className="text-emerald-600 font-black">✓</span>
+                                        ) : (
+                                          <span className="text-slate-350 font-serif">?</span>
+                                        )}
+                                        <span>{skill}</span>
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </div>
 
-                            {/* Actions block */}
-                            <div className="flex items-center gap-2">
-                              {/* Favorite add */}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (isFavorited) return;
-                                  setFavoriteJobs(prev => {
-                                    if (prev.includes(job.role)) return prev;
-                                    return [...prev, job.role];
-                                  });
-                                  setSelectedFavoriteJob(job.role);
-                                }}
-                                disabled={isFavorited}
-                                className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 select-none ${
-                                  isFavorited
-                                    ? "bg-slate-50 border border-slate-205 text-slate-400 cursor-not-allowed"
-                                    : "bg-indigo-600 hover:bg-slate-900 text-white shadow-2xs"
-                                }`}
-                              >
-                                {isFavorited ? (
-                                  <>
-                                    <span>✓</span>
-                                    <span>Mitt Karriärmål</span>
-                                  </>
+                            {/* Matching summary alert */}
+                            <div className="flex justify-between items-center gap-4 pt-3 border-t border-slate-100 flex-wrap">
+                              <span className="text-[10.5px] text-slate-500 font-sans">
+                                {job.missingSkills.length === 0 ? (
+                                  <span className="text-emerald-700 font-extrabold flex items-center gap-1">
+                                    <span>✓</span> Du matchar alla nyckelkompetenser för detta yrke!
+                                  </span>
                                 ) : (
-                                  <>
-                                    <span>🎯</span>
-                                    <span>Satsa på detta yrke</span>
-                                  </>
+                                  <span>Du saknar <strong>{job.missingSkills.length} st</strong> nyckelkompetenser för komplett matchning.</span>
                                 )}
-                              </button>
+                              </span>
 
-                              {/* Talk to Lasse */}
-                              {onStartChatWithLasse && (
+                              {/* Actions block */}
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {/* Favorite add */}
                                 <button
                                   type="button"
                                   onClick={() => {
-                                    const promptText = `Hej Lasse! Jag vill ha råd om hur jag kan skola om mig eller stänga mitt kompetensgap till bristyrket "${job.role}". Jag matchar i dagsläget ${job.hasSkills.length} av ${job.requiredSkills.length} nyckelkompetenser. Hur rekommenderar du att jag börjar min kompetensresa?`;
-                                    onStartChatWithLasse(promptText);
+                                    if (isFavorited) return;
+                                    setFavoriteJobs(prev => {
+                                      if (prev.includes(job.role)) return prev;
+                                      return [...prev, job.role];
+                                    });
+                                    setSelectedFavoriteJob(job.role);
                                   }}
-                                  className="border border-slate-200 hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-xl text-[11px] font-bold transition flex items-center gap-1 select-none cursor-pointer"
+                                  disabled={isFavorited}
+                                  className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 select-none ${
+                                    isFavorited
+                                      ? "bg-slate-50 border border-slate-205 text-slate-400 cursor-not-allowed"
+                                      : "bg-indigo-600 hover:bg-slate-700 text-white shadow-2xs"
+                                  }`}
                                 >
-                                  <span>💬</span>
-                                  <span>Rådgör med Lasse</span>
+                                  {isFavorited ? (
+                                    <>
+                                      <span>✓</span>
+                                      <span>Mitt Karriärmål</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <span>🎯</span>
+                                      <span>Satsa på detta yrke</span>
+                                    </>
+                                  )}
                                 </button>
-                              )}
-                            </div>
-                          </div>
 
-                        </div>
-                      );
-                    })}
+                                {/* Compare toggle button */}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedCompareRoles(prev => {
+                                      let next;
+                                      if (prev.includes(job.role)) {
+                                        next = prev.filter(r => r !== job.role);
+                                      } else {
+                                        next = [...prev, job.role];
+                                      }
+                                      if (next.length >= 2) {
+                                        setIsCompareModalOpen(true);
+                                      }
+                                      return next;
+                                    });
+                                  }}
+                                  className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 select-none border ${
+                                    isSelectedForCompare
+                                      ? "bg-amber-500 hover:bg-amber-600 border-amber-600 text-white shadow-2xs"
+                                      : "bg-white hover:bg-slate-50 border-slate-200 text-slate-705 hover:border-slate-300"
+                                  }`}
+                                  style={{ display: 'none' }}
+                                  title={isSelectedForCompare ? "Ta bort från jämförelse" : "Lägg till i jämförelse"}
+                                >
+                                  <span>{isSelectedForCompare ? "⚖️ Jämförs" : "⚖️ Jämför"}</span>
+                                </button>
+
+                                {/* Talk to Lasse */}
+                                {onStartChatWithLasse && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const promptText = `Hej Lasse! Jag vill ha råd om hur jag kan skola om mig eller stänga mitt kompetensgap till bristyrket "${job.role}". Jag matchar i dagsläget ${job.hasSkills.length} av ${job.requiredSkills.length} nyckelkompetenser. Hur rekommenderar du att jag börjar min kompetensresa?`;
+                                      onStartChatWithLasse(promptText);
+                                    }}
+                                    className="border border-slate-200 hover:bg-slate-50 text-slate-705 px-3 py-1.5 rounded-xl text-[11px] font-bold transition flex items-center gap-1 select-none cursor-pointer"
+                                  >
+                                    <span>💬</span>
+                                    <span>Rådgör med Lasse</span>
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* PAGINATION SHOW MORE BUTTON */}
+                    {filteredShortageJobs.length > shortageVisibleCount && (
+                      <div className="flex justify-center pt-4">
+                        <button
+                          type="button"
+                          onClick={() => setShortageVisibleCount((prev) => prev + 10)}
+                          className="bg-white hover:bg-slate-50 text-indigo-600 hover:text-indigo-800 font-extrabold text-xs px-5 py-3 rounded-2xl border border-slate-200 hover:border-slate-300 shadow-3xs transition-all cursor-pointer flex items-center gap-2"
+                        >
+                          <span>Visa fler bristyrken</span>
+                          <span className="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-lg text-[9px] font-mono font-bold">
+                            +{Math.min(10, filteredShortageJobs.length - shortageVisibleCount)} av {filteredShortageJobs.length - shortageVisibleCount} kvar
+                          </span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 );
               })()}
             </div>
-          </div> {/* Close BLOCK 3 Matcha Bristyrken parent inner list */}
-        </div> {/* Close BLOCK 3 Matcha Bristyrken parent container */}
-      </motion.div>
-    )}
+          </div> 
+        </motion.div>
+      )}
     </AnimatePresence>
 
     {/* 4. MOBILE/RESPONSIVE OVERLAY FOR SAVED CAREER GAP DIAGNOSIS */}
@@ -4567,6 +4871,8 @@ export default function ProfilePortal({
         </motion.div>
       )}
     </AnimatePresence>
+
+
 
     </div> {/* Close Main Workspace Grid */}
 
