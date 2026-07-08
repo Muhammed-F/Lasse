@@ -1448,6 +1448,30 @@ export default function App() {
   const [chatError, setChatError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Helper to strip undefined values recursively for Firestore
+  const cleanFirestoreData = (obj: any): any => {
+    if (obj === undefined) {
+      return null;
+    }
+    if (obj === null) {
+      return null;
+    }
+    if (Array.isArray(obj)) {
+      return obj.map(item => cleanFirestoreData(item));
+    }
+    if (typeof obj === 'object') {
+      const cleaned: any = {};
+      for (const key of Object.keys(obj)) {
+        const val = obj[key];
+        if (val !== undefined) {
+          cleaned[key] = cleanFirestoreData(val);
+        }
+      }
+      return cleaned;
+    }
+    return obj;
+  };
+
   // Firebase auth state and listeners
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
@@ -1538,7 +1562,7 @@ export default function App() {
             ]);
 
             try {
-              await setDoc(userDocRef, {
+              await setDoc(userDocRef, cleanFirestoreData({
                 profile: freshProfilePlaceholder,
                 favoriteJobs: [],
                 selectedFavoriteJob: "",
@@ -1553,7 +1577,7 @@ export default function App() {
                     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                   }
                 ]
-              });
+              }));
             } catch (err) {
               handleFirestoreError(err, OperationType.WRITE, `users/${user.uid}`);
             }
@@ -1622,7 +1646,7 @@ export default function App() {
       const saveToFirestore = async () => {
         try {
           const userDocRef = doc(db, "users", currentUser.uid);
-          await setDoc(userDocRef, {
+          await setDoc(userDocRef, cleanFirestoreData({
             profile,
             favoriteJobs,
             selectedFavoriteJob,
@@ -1630,7 +1654,7 @@ export default function App() {
             completedSteps,
             uploadedDocs,
             messages,
-          }, { merge: true });
+          }), { merge: true });
         } catch (err) {
           console.error("Auto-sync error saving to Firestore:", err);
           handleFirestoreError(err, OperationType.WRITE, `users/${currentUser.uid}`);
@@ -2727,17 +2751,55 @@ export default function App() {
             </div>
 
             {/* 1.5. ELEGANT HEADER INFORMATION BAR */}
-            <div className="bg-white/90 backdrop-blur-md border border-slate-200/65 px-5 py-3.5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shrink-0 shadow-[0_4px_20px_-4px_rgba(15,23,42,0.02)]" id="jobs-page-sub-tabs">
-              <div>
-                <h3 className="font-sans font-black text-slate-900 text-sm tracking-tight uppercase flex items-center gap-2">
-                  <Briefcase className="h-4 w-4 text-sky-600" />
-                  <span>Svensk Yrkeskatalog</span>
-                </h3>
-                <p className="text-[10px] text-slate-500">Utforska yrkesgrupper, löner, framtidsutsikter och live-platsannonser i fackliga Sverige.</p>
+            <div className="bg-white/90 backdrop-blur-md border border-slate-200/65 px-5 py-3 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shrink-0 shadow-[0_4px_20px_-4px_rgba(15,23,42,0.02)]" id="jobs-page-sub-tabs">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full md:w-auto">
+                <div>
+                  <h3 className="font-sans font-black text-slate-900 text-sm tracking-tight uppercase flex items-center gap-2">
+                    <Briefcase className="h-4 w-4 text-sky-600" />
+                    <span>{jobsSubTab === 'catalog' ? "Svensk Yrkeskatalog" : "Live-Sökning Platsbanken"}</span>
+                  </h3>
+                  <p className="text-[10px] text-slate-500">
+                    {jobsSubTab === 'catalog' 
+                      ? "Utforska yrkesgrupper, löner, framtidsutsikter och live-platsannonser i fackliga Sverige."
+                      : "Sök fritt bland tusentals aktuella jobbannonser i realtid via Arbetsförmedlingens officiella register."}
+                  </p>
+                </div>
               </div>
 
-              <div className="text-[11px] font-mono text-slate-400 font-bold select-none text-right">
-                📊 Officiell Yrkesstatistik & Kompetenskartor med Live-Platsbanken
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto self-stretch md:self-auto shrink-0">
+                {/* Segments/Tabs */}
+                <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200/50">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setJobsSubTab('catalog');
+                    }}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      jobsSubTab === 'catalog' 
+                        ? 'bg-slate-900 text-white shadow-xs' 
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50/50'
+                    }`}
+                  >
+                    Yrkeskatalog 📖
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setJobsSubTab('search');
+                    }}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      jobsSubTab === 'search' 
+                        ? 'bg-slate-900 text-white shadow-xs' 
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50/50'
+                    }`}
+                  >
+                    Live-Sökning (Platsbanken) 🔍
+                  </button>
+                </div>
+
+                <div className="hidden lg:block text-[11px] font-mono text-slate-400 font-bold select-none text-right shrink-0">
+                  📊 Officiell Yrkesstatistik
+                </div>
               </div>
             </div>
 
@@ -3318,6 +3380,7 @@ export default function App() {
                           const matchesKeyword = !catalogSearch.trim() || 
                             job.role.toLowerCase().includes(catalogSearch.toLowerCase()) ||
                             job.requiredSkills.some(s => s.toLowerCase().includes(catalogSearch.toLowerCase())) ||
+                            job.educationRequired.toLowerCase().includes(catalogSearch.toLowerCase()) ||
                             job.category.toLowerCase().includes(catalogSearch.toLowerCase());
                           
                           let matchesSalary = true;
@@ -3343,6 +3406,7 @@ export default function App() {
                           const matchesKeyword = !catalogSearch.trim() || 
                             job.role.toLowerCase().includes(catalogSearch.toLowerCase()) ||
                             job.requiredSkills.some(s => s.toLowerCase().includes(catalogSearch.toLowerCase())) ||
+                            job.educationRequired.toLowerCase().includes(catalogSearch.toLowerCase()) ||
                             job.category.toLowerCase().includes(catalogSearch.toLowerCase());
                           
                           let matchesSalary = true;

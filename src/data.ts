@@ -762,6 +762,17 @@ export const NEW_INDUSTRIES_SHORTAGE_JOBS: DemandJob[] = [
 
   // 7. Juridik & Offentlig Förvaltning
   {
+    role: "Statsvetare (Political Scientist)",
+    activeAds: 240,
+    avgSalary: 42800,
+    salaryRange: "34 000 - 58 000 SEK/månad",
+    demandLevel: "Medium",
+    futureOutlook: "Stadigt behov inom statliga myndigheter, regioner, kommuner och internationella organisationer för utredning och analys.",
+    requiredSkills: ["Statsvetenskap", "Politisk analys", "Offentlig förvaltning", "Kvantitativ metod", "Kvalitativ utredning", "Omvärldsanalys", "Rapportskrivande"],
+    educationRequired: "Kandidatexamen eller masterexamen i statsvetenskap, freds- och konfliktkunskap eller offentlig förvaltning.",
+    category: "Juridik & Offentlig Förvaltning"
+  },
+  {
     role: "Jurist (Legal Counsel)",
     activeAds: 910,
     avgSalary: 49000,
