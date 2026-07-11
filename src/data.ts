@@ -575,6 +575,17 @@ export const NEW_INDUSTRIES_SHORTAGE_JOBS: DemandJob[] = [
     educationRequired: "Högskoleexamen eller YH-examen inom produktionsteknik, industriell ekonomi eller maskinteknik.",
     category: "Industri & Tillverkning"
   },
+  {
+    role: "Underhållstekniker (Maintenance Technician)",
+    activeAds: 1250,
+    avgSalary: 36500,
+    salaryRange: "31 000 - 44 000 SEK/månad",
+    demandLevel: "High",
+    futureOutlook: "Mycket stark efterfrågan inom processindustri, automation och tillverkningsindustri i takt med ökad robotisering.",
+    requiredSkills: ["Förebyggande underhåll", "Mekanisk felsökning", "Pneumatik & Hydraulik", "Automation / PLC", "Elkunskap", "Felavhjälpning"],
+    educationRequired: "Gymnasieutbildning inom el, industri eller automation, alternativt eftergymnasial YH-utbildning till underhållstekniker.",
+    category: "Industri & Tillverkning"
+  },
 
   // 3. Försäljning & Marknadsföring
   {
@@ -1704,13 +1715,100 @@ export const ENTRY_LEVEL_NO_EDU_JOBS: DemandJob[] = [
   }
 ];
 
+// Map any old/informal categories to the official 21 Swedish categories requested
+function mapToOfficialSwedishCategory(role: string, oldCat: string): string {
+  const r = role.toLowerCase();
+  const c = oldCat;
+
+  if (r.includes("chef") || r.includes("ledare") || r.includes("manager") || r.includes("rektor") || r.includes("föreståndare")) {
+    return "Chefer och verksamhetsledare";
+  }
+  if (r.includes("militär") || r.includes("soldat") || r.includes("officer")) {
+    return "Militära yrken";
+  }
+  if (r.includes("naturvet") || r.includes("kemist") || r.includes("biolog") || r.includes("fysiker") || r.includes("forskare")) {
+    return "Naturvetenskap";
+  }
+
+  if (c === "Teknik") {
+    if (r.includes("utvecklare") || r.includes("developer") || r.includes("it-") || r.includes("analytiker") || r.includes("cybersecurity") || r.includes("cloud") || r.includes("devops") || r.includes("nätverk") || r.includes("data") || r.includes("system") || r.includes("programmerare") || r.includes("arkitekt")) {
+      return "Data/IT";
+    }
+    return "Yrken med teknisk inriktning";
+  }
+  if (c === "Hälsa") {
+    return "Hälso- och sjukvård";
+  }
+  if (c === "Utbildning") {
+    return "Pedagogik";
+  }
+  if (c === "Säkerhet / Logistik") {
+    if (r.includes("lager") || r.includes("logistik") || r.includes("truck") || r.includes("budb") || r.includes("leverans")) {
+      return "Transport, distribution, lager";
+    }
+    return "Säkerhet och bevakning";
+  }
+  if (c === "Ekonomi") {
+    return "Administration, ekonomi, juridik";
+  }
+  if (c === "Bygg & Anläggning") {
+    if (r.includes("målare") || r.includes("snickare") || r.includes("murare") || r.includes("elektriker") || r.includes("plattsättare") || r.includes("golvläggare") || r.includes("plåtslagare")) {
+      return "Hantverk";
+    }
+    return "Bygg och anläggning";
+  }
+  if (c === "Industri & Tillverkning") {
+    if (r.includes("svetsare") || r.includes("reparatör") || r.includes("mekaniker") || r.includes("underhåll") || r.includes("montör") || r.includes("tekniker")) {
+      return "Installation, drift, underhåll";
+    }
+    return "Industriell tillverkning";
+  }
+  if (c === "Försäljning & Marknadsföring") {
+    return "Försäljning, inköp, marknadsföring";
+  }
+  if (c === "Service & Handel") {
+    if (r.includes("kropps") || r.includes("skönhet") || r.includes("frisör") || r.includes("hud") || r.includes("terapeut")) {
+      return "Kropps- och skönhetsvård";
+    }
+    if (r.includes("städ") || r.includes("renhållning") || r.includes("fönsterputs") || r.includes("sanering") || r.includes("soptub")) {
+      return "Sanering och renhållning";
+    }
+    return "Försäljning, inköp, marknadsföring";
+  }
+  if (c === "Hotell, Restaurang & Turism") {
+    return "Hotell, restaurang, storhushåll";
+  }
+  if (c === "Transport") {
+    return "Transport, distribution, lager";
+  }
+  if (c === "Juridik & Offentlig Förvaltning") {
+    return "Administration, ekonomi, juridik";
+  }
+  if (c === "Media & Kreativa Yrken") {
+    return "Kultur, media, design";
+  }
+  if (c === "Naturbruk & Miljö") {
+    return "Naturbruk";
+  }
+  if (c === "Omsorg & Socialt Arbete") {
+    return "Yrken med social inriktning";
+  }
+
+  return "Administration, ekonomi, juridik";
+}
+
 // Filter out duplicates by matching role name to prevent duplicated key errors in React.
 // We prioritize high-integrity, hand-crafted entry level & base catalog datasets over dynamic fallbacks.
 const uniqueShortageJobsMap = new Map<string, DemandJob>();
 [...ENTRY_LEVEL_NO_EDU_JOBS, ...BASE_IN_DEMAND_JOBS, ...NEW_INDUSTRIES_SHORTAGE_JOBS, ...EXPANDED_EXTRA_JOBS].forEach(job => {
   const normKey = job.role.split('(')[0].trim().toLowerCase();
   if (!uniqueShortageJobsMap.has(normKey)) {
-    uniqueShortageJobsMap.set(normKey, job);
+    // Map categories to the 21 official categories
+    const mappedCategory = mapToOfficialSwedishCategory(job.role, job.category);
+    uniqueShortageJobsMap.set(normKey, {
+      ...job,
+      category: mappedCategory
+    });
   }
 });
 export const IN_DEMAND_JOBS: DemandJob[] = Array.from(uniqueShortageJobsMap.values());

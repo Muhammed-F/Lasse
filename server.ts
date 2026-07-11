@@ -150,95 +150,218 @@ function cleanAndParseJSON(text: string, fallback: any) {
   if (!text) return fallback;
   let cleanText = text.trim();
   
-  // Remove markdown code block backticks if present
-  if (cleanText.startsWith("```")) {
-    cleanText = cleanText.replace(/^```[a-zA-Z]*\s*/, "");
-    cleanText = cleanText.replace(/\s*```$/, "");
-    cleanText = cleanText.trim();
+  // Helper to remove markdown code block backticks if present
+  const stripBackticks = (t: string) => {
+    let s = t.trim();
+    if (s.startsWith("```")) {
+      s = s.replace(/^```[a-zA-Z]*\s*/, "");
+      s = s.replace(/\s*```$/, "");
+      s = s.trim();
+    }
+    return s;
+  };
+
+  cleanText = stripBackticks(cleanText);
+
+  // Layer 1: Try to parse immediately if it's already clean, valid JSON
+  try {
+    return JSON.parse(cleanText);
+  } catch (err) {
+    // Standard parse failed, proceed to deeper extraction and repair
   }
-  
-  // Find the first brace { or bracket [
+
+  // Layer 2: Extract candidate JSON block from first { or [ to last } or ]
   const firstBrace = cleanText.indexOf("{");
   const firstBracket = cleanText.indexOf("[");
+  const lastBrace = cleanText.lastIndexOf("}");
+  const lastBracket = cleanText.lastIndexOf("]");
+
   let startIdx = -1;
-  let isObject = true;
-  
+  let endIdx = -1;
+
   if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
     startIdx = firstBrace;
-    isObject = true;
+    endIdx = lastBrace;
   } else if (firstBracket !== -1) {
     startIdx = firstBracket;
-    isObject = false;
+    endIdx = lastBracket;
   }
+
+  let candidate = cleanText;
+  if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+    candidate = cleanText.substring(startIdx, endIdx + 1);
+    try {
+      return JSON.parse(candidate);
+    } catch (err) {
+      // Extraction failed to parse, continue to sanitization
+    }
+  }
+
+  // Layer 3: Perform common string/quote sanitizations and remove trailing commas
+  let sanitized = candidate;
   
-  if (startIdx !== -1) {
-    let depth = 0;
-    let inString = false;
-    let escape = false;
-    let endIdx = -1;
-    
-    for (let i = startIdx; i < cleanText.length; i++) {
-      const char = cleanText[i];
-      
-      if (escape) {
-        escape = false;
-        continue;
+  // Replace curly/smart quotes
+  sanitized = sanitized
+    .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"') // double curly quotes
+    .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'"); // single curly quotes
+
+  // Escape control characters
+  sanitized = escapeControlCharactersInStrings(sanitized);
+
+  // Strip trailing commas before closing braces/brackets
+  sanitized = sanitized.replace(/,\s*([\]}])/g, "$1");
+
+  try {
+    return JSON.parse(sanitized);
+  } catch (err) {
+    // Sanitized parsing failed, fall back to advanced state machine repair
+  }
+
+  // Layer 4: State-machine based robust parser (for nested quotes, brace mismatch, missing commas)
+  let repaired = "";
+  let inString = false;
+  let i = 0;
+  const stack: string[] = [];
+
+  const getLastNonWsChar = (str: string): string => {
+    for (let j = str.length - 1; j >= 0; j--) {
+      if (!/\s/.test(str[j])) {
+        return str[j];
       }
-      
-      if (char === "\\") {
-        escape = true;
-        continue;
+    }
+    return "";
+  };
+
+  while (i < sanitized.length) {
+    const char = sanitized[i];
+
+    // Handle escaped characters
+    if (char === "\\") {
+      repaired += char;
+      if (i + 1 < sanitized.length) {
+        repaired += sanitized[i + 1];
+        i += 2;
+      } else {
+        i++;
       }
-      
-      if (char === '"') {
-        inString = !inString;
-        continue;
-      }
-      
+      continue;
+    }
+
+    if (char === '"') {
       if (!inString) {
-        if (isObject) {
-          if (char === "{") depth++;
-          else if (char === "}") {
-            depth--;
-            if (depth === 0) {
-              endIdx = i;
+        // We are entering a string. Check if there was a missing comma.
+        const lastChar = getLastNonWsChar(repaired);
+        if (lastChar && !['{', '[', ',', ':'].includes(lastChar)) {
+          repaired += ",";
+        }
+        inString = true;
+        repaired += char;
+        i++;
+      } else {
+        // We are inside a string. Decide if this quote closes it or is nested.
+        let nextNonWsIdx = i + 1;
+        while (nextNonWsIdx < sanitized.length && /\s/.test(sanitized[nextNonWsIdx])) {
+          nextNonWsIdx++;
+        }
+
+        if (nextNonWsIdx >= sanitized.length) {
+          inString = false;
+          repaired += char;
+          i++;
+          continue;
+        }
+
+        const nextNonWsChar = sanitized[nextNonWsIdx];
+
+        if ([':', ',', '}', ']'].includes(nextNonWsChar)) {
+          inString = false;
+          repaired += char;
+          i++;
+        } else if (nextNonWsChar === '"') {
+          // Check if next string is a key
+          let isNextAKey = false;
+          let scanIdx = nextNonWsIdx + 1;
+          while (scanIdx < sanitized.length) {
+            const sc = sanitized[scanIdx];
+            if (sc === "\\") {
+              scanIdx += 2;
+              continue;
+            }
+            if (sc === '"') {
+              let postScanIdx = scanIdx + 1;
+              while (postScanIdx < sanitized.length && /\s/.test(sanitized[postScanIdx])) {
+                postScanIdx++;
+              }
+              if (postScanIdx < sanitized.length && sanitized[postScanIdx] === ":") {
+                isNextAKey = true;
+              }
               break;
             }
+            scanIdx++;
+          }
+
+          if (isNextAKey) {
+            inString = false;
+            repaired += '",';
+            i = nextNonWsIdx;
+          } else {
+            repaired += '\\"';
+            i++;
           }
         } else {
-          if (char === "[") depth++;
-          else if (char === "]") {
-            depth--;
-            if (depth === 0) {
-              endIdx = i;
-              break;
-            }
+          repaired += '\\"';
+          i++;
+        }
+      }
+    } else {
+      if (!inString) {
+        // Check for missing commas before braces/brackets/numbers/booleans/null
+        if (['{', '[', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', 't', 'f', 'n'].includes(char)) {
+          const lastChar = getLastNonWsChar(repaired);
+          if (lastChar && !['{', '[', ',', ':'].includes(lastChar)) {
+            repaired += ",";
+          }
+        }
+
+        if (char === "{" || char === "[") {
+          stack.push(char);
+        } else if (char === "}") {
+          if (stack[stack.length - 1] === "{") {
+            stack.pop();
+          }
+        } else if (char === "]") {
+          if (stack[stack.length - 1] === "[") {
+            stack.pop();
           }
         }
       }
-    }
-    
-    if (endIdx !== -1) {
-      cleanText = cleanText.substring(startIdx, endIdx + 1);
-    } else {
-      // Fallback search last occurrences if balanced scanning is incomplete
-      const fallbackEndIdx = isObject ? cleanText.lastIndexOf("}") : cleanText.lastIndexOf("]");
-      if (fallbackEndIdx !== -1 && fallbackEndIdx > startIdx) {
-        cleanText = cleanText.substring(startIdx, fallbackEndIdx + 1);
-      }
+      repaired += char;
+      i++;
     }
   }
-  
-  cleanText = escapeControlCharactersInStrings(cleanText);
-  
+
+  if (inString) {
+    repaired += '"';
+  }
+
+  while (stack.length > 0) {
+    const last = stack.pop();
+    if (last === "{") {
+      repaired += "}";
+    } else if (last === "[") {
+      repaired += "]";
+    }
+  }
+
+  repaired = repaired.replace(/,\s*([\]}])/g, "$1");
+
   try {
-    return JSON.parse(cleanText);
+    return JSON.parse(repaired);
   } catch (error) {
-    console.warn("[JSON Clean Parser] Standard JSON.parse failed. Attempting tail-comma stripping.", error);
+    console.warn("[JSON Clean Parser] Standard JSON.parse failed on repaired string. Attempting deep cleanup fallback.", error);
     try {
-      // Remove common trailing commas in arrays/objects
-      const sanitized = cleanText.replace(/,\s*([\]}])/g, "$1");
-      return JSON.parse(sanitized);
+      const finalSanitized = repaired.trim();
+      return JSON.parse(finalSanitized);
     } catch (e) {
       console.error("[JSON Clean Parser] Failed to parse JSON even after cleaning. Fallback returned:", fallback);
       return fallback;
@@ -823,9 +946,9 @@ Format response strictly as a JSON array of objects conforming to this:
 // 5. Real-Time Swedish Job Registry Search (Arbetsförmedlingen API)
 app.post("/api/search-jobs", async (req, res) => {
   const { keyword, location, limit = 25 } = req.body;
-  const cleanKeyword = keyword || "";
+  const cleanKeyword = (keyword || "").trim();
   const locFilter = location && location !== "All locations" ? location : "";
-  const searchString = `${cleanKeyword} ${locFilter}`.trim();
+  const searchString = `${cleanKeyword} ${locFilter}`.trim().replace(/\s+/g, ' ');
   
   if (!searchString) {
     return res.json({ total: 0, jobs: [] });

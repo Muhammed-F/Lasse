@@ -15,7 +15,9 @@ import {
   Upload,
   Download,
   X,
-  ChevronDown
+  ChevronDown,
+  CreditCard,
+  ShieldAlert
 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { 
@@ -171,6 +173,10 @@ interface ProfilePortalProps {
   setSelectedCompareRoles: React.Dispatch<React.SetStateAction<string[]>>;
   isCompareModalOpen: boolean;
   setIsCompareModalOpen: (b: boolean) => void;
+  isPremium?: boolean;
+  setIsPremium?: (b: boolean) => void;
+  isPremiumCancelled?: boolean;
+  setIsPremiumCancelled?: (b: boolean) => void;
 }
 
 // Helpers for checking educational and experience requirements
@@ -306,11 +312,18 @@ export default function ProfilePortal({
   selectedCompareRoles,
   setSelectedCompareRoles,
   isCompareModalOpen,
-  setIsCompareModalOpen
+  setIsCompareModalOpen,
+  isPremium,
+  setIsPremium,
+  isPremiumCancelled,
+  setIsPremiumCancelled
 }: ProfilePortalProps) {
   
   // Sectioned layout tracker tab: 'saved-careers' | 'active-progression' | 'profile-details' | 'shortage-matching'
   const [profileSubTab, setProfileSubTab] = useState<'saved-careers' | 'active-progression' | 'profile-details' | 'shortage-matching'>('saved-careers');
+  const [showBilling, setShowBilling] = useState<boolean>(false);
+  const [cancelConfirm, setCancelConfirm] = useState<boolean>(false);
+  const [billingSubmitting, setBillingSubmitting] = useState<boolean>(false);
   const [isMobileGapModalOpen, setIsMobileGapModalOpen] = useState(false);
   const [isMobileCareerListOpen, setIsMobileCareerListOpen] = useState(false);
   const [cvSectionTab, setCvSectionTab] = useState<'preview' | 'data'>('preview');
@@ -2787,7 +2800,7 @@ export default function ProfilePortal({
                   </p>
                 </div>
 
-                <div className="pt-2 border-t border-slate-100">
+                <div className="pt-2 border-t border-slate-100 space-y-2">
                   {!isEditingProfile ? (
                     <button
                       type="button"
@@ -2805,7 +2818,168 @@ export default function ProfilePortal({
                       <span>Spara Uppgifter ✓</span>
                     </button>
                   )}
+
+                  {/* Billing management button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowBilling(!showBilling);
+                      setCancelConfirm(false);
+                    }}
+                    className={`w-full py-2.5 border text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-98 ${
+                      showBilling 
+                        ? "bg-slate-900 text-white border-slate-900 hover:bg-slate-800 dark:bg-amber-500 dark:text-slate-950 dark:hover:bg-amber-400" 
+                        : "bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-200/80 dark:bg-amber-950/20 dark:hover:bg-amber-950/30 dark:text-amber-300 dark:border-amber-900/50"
+                    }`}
+                    id="manage-billing-button"
+                  >
+                    <CreditCard className="h-3.5 w-3.5" />
+                    <span>{showBilling ? "Stäng Hantera Betalning ×" : "Hantera Betalning & Prenumeration 💳"}</span>
+                  </button>
                 </div>
+
+                {/* Collapsible Billing Details Panel */}
+                <AnimatePresence>
+                  {showBilling && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="p-4 bg-slate-50 dark:bg-slate-900 border border-slate-150 dark:border-slate-850 rounded-xl space-y-3.5 text-xs font-sans mt-2">
+                        <div className="flex justify-between items-center border-b border-slate-200/60 dark:border-slate-800 pb-2">
+                          <span className="font-bold text-slate-500 dark:text-slate-400">Medlemskap:</span>
+                          <span className={`px-2 py-0.5 rounded-full font-black text-[10px] uppercase tracking-wide ${
+                            isPremium 
+                              ? isPremiumCancelled 
+                                ? "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300" 
+                                : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"
+                              : "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-400"
+                          }`}>
+                            {isPremium ? (isPremiumCancelled ? "Premium (Uppsagd)" : "Lasse Premium 💎") : "Lasse Gratis 🌟"}
+                          </span>
+                        </div>
+
+                        {isPremium ? (
+                          <div className="space-y-3">
+                            <div className="space-y-1.5 font-mono text-[11px] text-slate-600 dark:text-slate-400 leading-normal">
+                              <p className="flex justify-between">
+                                <span>Giltig till:</span>
+                                <strong className="text-slate-850 dark:text-slate-200 font-extrabold">2026-08-11</strong>
+                              </p>
+                              <p className="flex justify-between">
+                                <span>Återstående tid:</span>
+                                <strong className="text-slate-850 dark:text-slate-200 font-bold">31 dagar kvar</strong>
+                              </p>
+                              <p className="flex justify-between">
+                                <span>Månadskostnad:</span>
+                                <strong className="text-slate-850 dark:text-slate-200">50 SEK</strong>
+                              </p>
+                              <p className="flex justify-between">
+                                <span>Debitering nästa månad:</span>
+                                <strong className={isPremiumCancelled ? "text-rose-500 font-bold" : "text-emerald-600 dark:text-emerald-400 font-bold"}>
+                                  {isPremiumCancelled ? "0 kr (Annullerad)" : "50 kr (Automatiskt)"}
+                                </strong>
+                              </p>
+                            </div>
+
+                            {/* Show warning if active and not cancelled */}
+                            {!isPremiumCancelled && (
+                              <div className="p-2.5 bg-sky-50 dark:bg-sky-950/20 border border-sky-100 dark:border-sky-900/30 rounded-lg text-[10px] text-sky-800 dark:text-sky-300 leading-normal">
+                                Ditt Lasse Premium förnyas automatiskt den 2026-08-11. Du kan när som helst säga upp prenumerationen nedan för att undvika framtida avgifter.
+                              </div>
+                            )}
+
+                            {isPremiumCancelled ? (
+                              <div className="p-2.5 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 rounded-lg text-[10px] text-rose-800 dark:text-rose-300 leading-normal">
+                                🛑 Prenumerationen är uppsagd. Du behåller full premiumåtkomst fram till den <strong>2026-08-11</strong>, därefter avslutas den och du debiteras inte igen.
+                              </div>
+                            ) : null}
+
+                            {/* Cancel / Reactivate Buttons */}
+                            {cancelConfirm ? (
+                              <div className="p-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-150 dark:border-rose-900/50 rounded-xl space-y-2.5">
+                                <p className="text-[10px] text-rose-850 dark:text-rose-300 font-bold leading-normal flex gap-1 items-start">
+                                  <ShieldAlert className="h-4 w-4 shrink-0 text-rose-500 mt-0.5" />
+                                  <span>Är du säker på att du vill avsluta? Du kommer att förlora tillgången till Lasse AI-karriärcoach, obegränsade CV-granskningar och smarta jobbmatchningar efter din period.</span>
+                                </p>
+                                <div className="flex gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      setBillingSubmitting(true);
+                                      setTimeout(() => {
+                                        if (setIsPremiumCancelled) setIsPremiumCancelled(true);
+                                        setBillingSubmitting(false);
+                                        setCancelConfirm(false);
+                                      }, 1000);
+                                    }}
+                                    disabled={billingSubmitting}
+                                    className="flex-1 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-[10px] rounded-lg transition active:scale-98 cursor-pointer text-center"
+                                  >
+                                    {billingSubmitting ? "Avbryter..." : "Ja, avsluta prenumeration"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setCancelConfirm(false)}
+                                    className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-[10px] rounded-lg transition active:scale-98 cursor-pointer"
+                                  >
+                                    Avbryt
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="pt-1">
+                                {!isPremiumCancelled ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => setCancelConfirm(true)}
+                                    className="w-full py-2 bg-transparent hover:bg-rose-50 dark:hover:bg-rose-950/20 text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-300 font-extrabold rounded-lg text-[11px] transition active:scale-98 cursor-pointer border border-rose-200 dark:border-rose-900/50"
+                                  >
+                                    Avbryt prenumeration 🛑
+                                  </button>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      setBillingSubmitting(true);
+                                      setTimeout(() => {
+                                        if (setIsPremiumCancelled) setIsPremiumCancelled(false);
+                                        setBillingSubmitting(false);
+                                      }, 800);
+                                    }}
+                                    disabled={billingSubmitting}
+                                    className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-lg text-[11px] uppercase tracking-wide transition active:scale-98 cursor-pointer flex items-center justify-center gap-1"
+                                  >
+                                    {billingSubmitting ? "Aktiverar..." : "Återaktivera prenumeration ⚡"}
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="space-y-2.5 text-center py-1">
+                            <p className="text-[10.5px] text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
+                              Du använder gratisversionen. Uppgradera till <strong className="text-slate-800 dark:text-white">Lasse Premium</strong> för obegränsade chattmeddelanden, professionell CV-mall, och mycket mer!
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowBilling(false);
+                                setActiveTab("premium");
+                              }}
+                              className="w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg text-[10.5px] uppercase tracking-wide transition active:scale-98 cursor-pointer"
+                            >
+                              Uppgradera nu 💎
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
               </div>
 
@@ -3961,7 +4135,30 @@ export default function ProfilePortal({
                     <p className="text-[9.5px] text-slate-400 leading-snug">Avgränsa matchningen till din sektor</p>
                   </div>
                   <div className="grid grid-cols-2 gap-1.5 pt-2 max-h-[192px] overflow-y-auto pr-1.5 scrollbar-thin scrollbar-thumb-slate-200">
-                    {["Alla", "Teknik", "Hälsa", "Utbildning", "Säkerhet / Logistik", "Ekonomi", "Bygg & Anläggning", "Industri & Tillverkning", "Försäljning & Marknadsföring", "Service & Handel", "Hotell, Restaurang & Turism", "Transport", "Juridik & Offentlig Förvaltning", "Media & Kreativa Yrken", "Naturbruk & Miljö", "Omsorg & Socialt Arbete"].map((categoryName) => {
+                    {[
+                      "Alla",
+                      "Administration, ekonomi, juridik",
+                      "Bygg och anläggning",
+                      "Chefer och verksamhetsledare",
+                      "Data/IT",
+                      "Försäljning, inköp, marknadsföring",
+                      "Hantverk",
+                      "Hotell, restaurang, storhushåll",
+                      "Hälso- och sjukvård",
+                      "Industriell tillverkning",
+                      "Installation, drift, underhåll",
+                      "Kropps- och skönhetsvård",
+                      "Kultur, media, design",
+                      "Militära yrken",
+                      "Naturbruk",
+                      "Naturvetenskap",
+                      "Pedagogik",
+                      "Sanering och renhållning",
+                      "Säkerhet och bevakning",
+                      "Transport, distribution, lager",
+                      "Yrken med social inriktning",
+                      "Yrken med teknisk inriktning"
+                    ].map((categoryName) => {
                       const isActive = selectedShortageIndustry === categoryName;
                       return (
                         <button
