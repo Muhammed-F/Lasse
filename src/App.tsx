@@ -1549,6 +1549,7 @@ export default function App() {
   const [isLoadingFirebaseData, setIsLoadingFirebaseData] = useState(false);
   const [isPremium, setIsPremium] = useState<boolean>(false);
   const [isPremiumCancelled, setIsPremiumCancelled] = useState<boolean>(false);
+  const [showPremiumModal, setShowPremiumModal] = useState<boolean>(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -1929,7 +1930,7 @@ export default function App() {
     if (!textToSend.trim() || chatLoading) return;
 
     if (!isPremium) {
-      setChatError("Uppgradering till Premium krävs för att använda karriärcoachen.");
+      setShowPremiumModal(true);
       return;
     }
 
@@ -2615,7 +2616,7 @@ export default function App() {
       </header>
 
       {/* 3. WORKING VIEWPORT CANVASES */}
-      <main className={`flex-1 max-w-[1500px] w-full mx-auto ${(currentUser && activeTab === 'chat') ? 'overflow-hidden' : 'overflow-y-auto'} flex flex-col transition-all duration-300 ${activeTab === 'chat' ? 'p-1 sm:p-3 md:p-8 pb-20 md:pb-8' : 'p-4 md:p-8 pb-32 md:pb-8'}`} id="applet-sub-layout">
+      <main className={`flex-1 max-w-[1500px] w-full mx-auto ${(currentUser && activeTab === 'chat' && isPremium) ? 'overflow-hidden' : 'overflow-y-auto'} flex flex-col transition-all duration-300 ${activeTab === 'chat' ? 'p-1 sm:p-3 md:p-8 pb-20 md:pb-8' : 'p-4 md:p-8 pb-32 md:pb-8'}`} id="applet-sub-layout">
         
 
 
@@ -2641,74 +2642,6 @@ export default function App() {
                     title="Konsultera Karriärcoachen Lasse 💬"
                     subtitle="Logga in eller skapa ett kostnadsfritt konto för att chatta med Lasse om den svenska arbetsmarknaden, kollektivavtal, löneutsikter och jobbmatcher!"
                   />
-                </div>
-              ) : !isPremium ? (
-                <div className="w-full max-w-2xl bg-white dark:bg-[#1C1917] border border-border-card rounded-3xl shadow-2xl p-6 sm:p-8 flex flex-col justify-center animate-fade-in relative overflow-hidden transition-all duration-300 md:my-4" id="premium-paywall-view">
-                  {/* Visual Premium Header */}
-                  <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600" />
-                  
-                  <div className="flex flex-col items-center text-center mb-6">
-                    <div className="h-14 w-14 bg-amber-50 dark:bg-amber-950/30 rounded-full flex items-center justify-center text-amber-500 border border-amber-200/50 mb-3 shadow-inner">
-                      <Lock className="h-7 w-7 animate-pulse" />
-                    </div>
-                    <span className="text-[10px] bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-mono font-bold tracking-widest uppercase px-3 py-1 rounded-full mb-1.5">
-                      Premiumfunktion 👑
-                    </span>
-                    <h2 className="text-xl sm:text-2xl font-display font-extrabold tracking-tight text-slate-900 dark:text-white">
-                      Lås upp Karriärcoach Lasse
-                    </h2>
-                    <p className="text-slate-600 dark:text-slate-300 mt-2 text-xs sm:text-sm max-w-md">
-                      Få obegränsad personlig AI-karriärvägledning anpassad efter den svenska arbetsmarknaden för endast <strong className="text-slate-900 dark:text-white">50 kr/månad</strong>.
-                    </p>
-                    <div className="text-[10px] text-slate-400 mt-1 italic font-mono">
-                      Ingen bindningstid • Avsluta enkelt online • Säkert krypterad betalning
-                    </div>
-                  </div>
-
-                  {/* Feature Checklist */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80 mb-6 text-left">
-                    <div className="flex items-start gap-2.5">
-                      <div className="h-4.5 w-4.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-                        <Check className="h-3 w-3 stroke-[2.5]" />
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">Obegränsad AI-chatt dygnet runt</h4>
-                        <p className="text-[10px] text-slate-500 leading-normal">Ställ obegränsat med frågor om din svenska karriärresa.</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2.5">
-                      <div className="h-4.5 w-4.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-                        <Check className="h-3 w-3 stroke-[2.5]" />
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">Kollektivavtal & Facklig trygghet</h4>
-                        <p className="text-[10px] text-slate-500 leading-normal">Få svar om Unionen-villkor, tjänstepension, LAS och fika-kultur.</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2.5">
-                      <div className="h-4.5 w-4.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-                        <Check className="h-3 w-3 stroke-[2.5]" />
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">Löneförhandling & SCB-data</h4>
-                        <p className="text-[10px] text-slate-500 leading-normal">Lönespann och inkomstskatter enligt officiella tabeller.</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2.5">
-                      <div className="h-4.5 w-4.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-                        <Check className="h-3 w-3 stroke-[2.5]" />
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">Svenskt CV-skrivande</h4>
-                        <p className="text-[10px] text-slate-500 leading-normal">Automatisk omskrivning och matchning av ditt CV.</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <PremiumPaymentForm currentUser={currentUser} onPaymentSuccess={() => setIsPremium(true)} />
                 </div>
               ) : (
                 /* Unified Clean Messenger-Style Chat Panel with Warm Paper Design */
@@ -2775,6 +2708,26 @@ export default function App() {
                   );
                 })}
               </div>
+
+              {/* Gold Premium Upgrade Banner for Free tier */}
+              {!isPremium && (
+                <div className="bg-gradient-to-r from-amber-500/10 via-amber-600/15 to-amber-500/10 border-b border-border-card/25 px-5 py-2.5 flex items-center justify-between text-xs font-sans text-amber-900 shrink-0 select-none animate-fade-in relative z-10" id="chat-premium-bar">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">👑</span>
+                    <div>
+                      <strong className="font-extrabold text-[#78350F]">Demoläge aktiv</strong>
+                      <span className="text-slate-700 dark:text-slate-800 ml-1.5 hidden sm:inline-block">Läs gamla råd fritt. Uppgradera för att chatta obegränsat dygnet runt.</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowPremiumModal(true)}
+                    className="bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-black text-[10px] uppercase tracking-wider px-3.5 py-1.5 rounded-full shadow-sm transition cursor-pointer"
+                  >
+                    Lås upp Premium 💎
+                  </button>
+                </div>
+              )}
 
               {/* Chat Message Scroll list with bubbles */}
               <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-transparent scroll-smooth">
@@ -2885,7 +2838,13 @@ export default function App() {
                         <button
                           key={qi}
                           type="button"
-                          onClick={() => handleSendChatMessage(undefined, item.query)}
+                          onClick={() => {
+                            if (!isPremium) {
+                              setShowPremiumModal(true);
+                            } else {
+                              handleSendChatMessage(undefined, item.query);
+                            }
+                          }}
                           disabled={chatLoading}
                           className="px-3 py-1.5 bg-white/70 dark:bg-black/30 hover:bg-white dark:hover:bg-black/50 border border-border-card text-text-main rounded-full text-[10.5px] font-sans font-bold transition-all active:scale-95 cursor-pointer shadow-3xs flex items-center gap-1 select-none leading-none disabled:opacity-50 disabled:cursor-not-allowed"
                         >
@@ -2904,7 +2863,14 @@ export default function App() {
                       id="chat-query-textbox"
                       value={chatInput}
                       onChange={(e) => setChatInput(e.target.value)}
-                      placeholder="Fråga Lasse (t.ex. 'Vad innebär kollektivavtal?')..."
+                      onFocus={() => {
+                        if (!isPremium) {
+                          setShowPremiumModal(true);
+                          const el = document.getElementById("chat-query-textbox");
+                          if (el) (el as HTMLInputElement).blur();
+                        }
+                      }}
+                      placeholder={isPremium ? "Fråga Lasse (t.ex. 'Vad innebär kollektivavtal?')..." : "Lås upp Premium för att chatta med Lasse..."}
                       className="w-full pl-9 pr-4 py-3 text-xs bg-white dark:bg-white border border-slate-300 dark:border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#B85028]/35 text-slate-900 dark:text-slate-900 placeholder-slate-500 dark:placeholder-slate-500 font-sans shadow-xs"
                     />
                   </div>
@@ -5929,6 +5895,110 @@ export default function App() {
                   setAuthModalJob(null);
                 }}
               />
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      
+      {/* PREMIUM UPGRADE MODAL */}
+      <AnimatePresence>
+        {showPremiumModal && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto" id="premium-payment-modal-overlay">
+            {/* Backdrop click handler to close modal */}
+            <div className="absolute inset-0 cursor-default" onClick={() => setShowPremiumModal(false)} />
+            
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ duration: 0.2 }}
+              className="w-full max-w-xl bg-white dark:bg-[#1C1917] border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-4 sm:p-7 relative max-h-[92vh] flex flex-col my-auto overflow-y-auto z-10"
+              id="premium-payment-modal-content"
+            >
+              {/* Close Button */}
+              <button
+                type="button"
+                onClick={() => setShowPremiumModal(false)}
+                className="absolute top-4 right-4 h-8 w-8 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-850 dark:text-slate-400 dark:hover:text-slate-200 flex items-center justify-center cursor-pointer transition z-50 border border-slate-200/50 dark:border-slate-800"
+                title="Stäng fönster"
+              >
+                <X className="h-4 w-4" />
+              </button>
+
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 rounded-t-3xl" />
+
+              <div className="flex flex-col items-center text-center mb-4 mt-2">
+                <div className="h-10 w-10 bg-amber-50 dark:bg-amber-950/30 rounded-full flex items-center justify-center text-amber-500 border border-amber-200/50 mb-2 shadow-inner">
+                  <Lock className="h-5 w-5" />
+                </div>
+                <span className="text-[9px] bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-mono font-bold tracking-widest uppercase px-2.5 py-0.5 rounded-full mb-1">
+                  Premiumfunktion 👑
+                </span>
+                <h2 className="text-base sm:text-lg font-display font-extrabold tracking-tight text-slate-900 dark:text-white">
+                  Lås upp Karriärcoach Lasse
+                </h2>
+                <p className="text-slate-600 dark:text-slate-350 mt-1 text-[11px] sm:text-xs max-w-sm">
+                  Få obegränsad personlig AI-karriärvägledning anpassad efter den svenska arbetsmarknaden för endast <strong className="text-slate-900 dark:text-white font-extrabold">50 kr/månad</strong>.
+                </p>
+              </div>
+
+              {/* Compact checklist for modal */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-slate-50 dark:bg-slate-900/40 p-3 rounded-2xl border border-slate-100 dark:border-slate-850 text-left mb-4">
+                <div className="flex items-start gap-2">
+                  <div className="h-4 w-4 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                    <Check className="h-2.5 w-2.5 stroke-[3]" />
+                  </div>
+                  <div>
+                    <h4 className="text-[10.5px] font-bold text-slate-800 dark:text-slate-200 leading-tight">Obegränsad AI-chatt</h4>
+                    <p className="text-[9.5px] text-slate-500 leading-none mt-0.5">Ställ obegränsat med frågor.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2">
+                  <div className="h-4 w-4 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                    <Check className="h-2.5 w-2.5 stroke-[3]" />
+                  </div>
+                  <div>
+                    <h4 className="text-[10.5px] font-bold text-slate-800 dark:text-slate-200 leading-tight">Kollektivavtal & Fack</h4>
+                    <p className="text-[9.5px] text-slate-500 leading-none mt-0.5">Svar om fackvillkor & pension.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2">
+                  <div className="h-4 w-4 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                    <Check className="h-2.5 w-2.5 stroke-[3]" />
+                  </div>
+                  <div>
+                    <h4 className="text-[10.5px] font-bold text-slate-800 dark:text-slate-200 leading-tight">Löner & SCB-statistik</h4>
+                    <p className="text-[9.5px] text-slate-500 leading-none mt-0.5">Lönespann enligt SCB.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2">
+                  <div className="h-4 w-4 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                    <Check className="h-2.5 w-2.5 stroke-[3]" />
+                  </div>
+                  <div>
+                    <h4 className="text-[10.5px] font-bold text-slate-800 dark:text-slate-200 leading-tight">Svenskt CV-skrivande</h4>
+                    <p className="text-[9.5px] text-slate-500 leading-none mt-0.5">Automatisk omskrivning av CV.</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* The dynamic payment form with embedded verification, Swish, credit card */}
+              <div className="flex-1" id="modal-payment-form-wrapper">
+                <PremiumPaymentForm
+                  currentUser={currentUser}
+                  onPaymentSuccess={() => {
+                    setIsPremium(true);
+                    setShowPremiumModal(false);
+                  }}
+                />
+              </div>
+
+              <div className="text-center text-[9.5px] text-slate-400 mt-4 italic">
+                Säkert krypterat och skyddat. Inga dolda avgifter.
+              </div>
             </motion.div>
           </div>
         )}

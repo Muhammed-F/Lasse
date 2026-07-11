@@ -30,6 +30,7 @@ export default function PremiumPaymentForm({ currentUser, onPaymentSuccess }: Pr
   const [error, setError] = useState<string | null>(null);
   const [verificationError, setVerificationError] = useState<string | null>(null);
   const [showQR, setShowQR] = useState(false);
+  const [showQRMobile, setShowQRMobile] = useState(false);
   
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [copiedMsg, setCopiedMsg] = useState(false);
@@ -203,90 +204,114 @@ export default function PremiumPaymentForm({ currentUser, onPaymentSuccess }: Pr
                   </div>
                 ) : (
                   <div className="space-y-5 animate-fadeIn">
-                    <div className="bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/40 rounded-xl p-3.5 text-center text-[11px] text-amber-800 dark:text-amber-300">
+                    <div className="bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/40 rounded-xl p-3 text-center text-[11px] text-amber-800 dark:text-amber-300">
                       ⚠️ <strong>Viktigt:</strong> Betalningen Swishas direkt till Lasse så att du kan aktivera Lasse Premium direkt.
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
+                    {/* Step-by-step instructions specifically optimized for Mobile vs Desktop */}
+                    <div className="bg-slate-100/80 dark:bg-slate-900 p-3 rounded-xl border border-slate-200/40 dark:border-slate-800 space-y-2 text-xs">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wide text-slate-400 block">
+                        Följ dessa enkla steg:
+                      </span>
+                      <ol className="list-decimal list-inside space-y-1 text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+                        <li>
+                          Kopiera mottagarnumret och referenskoden nedan (eller klicka på <strong className="text-slate-800 dark:text-slate-200">Öppna Swish</strong> om du är på mobilen).
+                        </li>
+                        <li>
+                          Skicka exakt <strong className="text-slate-800 dark:text-slate-200">50 kr</strong> med din personliga referenskod som meddelande.
+                        </li>
+                        <li>
+                          Gå tillbaka hit och klicka på <strong className="text-slate-800 dark:text-slate-200">Jag har Swishat 50 kr</strong> för att aktivera direkt!
+                        </li>
+                      </ol>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-stretch">
                       {/* Swish Instruction Details */}
-                      <div className="md:col-span-7 space-y-3">
-                        {/* Payee Number Field */}
-                        <div>
-                          <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
-                            Mottagare
-                          </span>
-                          <div className="flex items-center justify-between bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2">
-                            <span className="font-sans text-xs sm:text-sm font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
-                              <span className="h-2 w-2 rounded-full bg-[#00C2E0]"></span>
-                              Swisha till Lasse
+                      <div className="md:col-span-7 space-y-3.5 flex flex-col justify-between">
+                        <div className="space-y-3">
+                          {/* Payee Number Field */}
+                          <div>
+                            <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                              Mottagare
                             </span>
-                            <button
-                              type="button"
-                              onClick={() => copyToClipboard(payeeNumber, "phone")}
-                              className="text-slate-400 hover:text-[#00C2E0] dark:hover:text-[#00C2E0] p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-850 transition-all flex items-center gap-1 cursor-pointer text-[10px] font-bold"
-                            >
-                              {copiedPhone ? (
-                                <span className="text-emerald-500 font-bold">Kopierat!</span>
-                              ) : (
-                                <>
-                                  <span>Kopiera nummer</span>
-                                  <Copy className="h-3 w-3" />
-                                </>
-                              )}
-                            </button>
+                            <div className="flex items-center justify-between bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5">
+                              <span className="font-sans text-xs sm:text-sm font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
+                                <span className="h-2 w-2 rounded-full bg-[#00C2E0]"></span>
+                                {formattedPayee}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => copyToClipboard(payeeNumber, "phone")}
+                                className="text-slate-500 hover:text-[#00C2E0] dark:text-slate-400 dark:hover:text-[#00C2E0] px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-850 transition-all flex items-center gap-1 cursor-pointer text-[10px] font-extrabold border border-slate-200/50 dark:border-slate-800"
+                              >
+                                {copiedPhone ? (
+                                  <span className="text-emerald-500 font-bold">Kopierat!</span>
+                                ) : (
+                                  <>
+                                    <span>Kopiera nummer</span>
+                                    <Copy className="h-3 w-3" />
+                                  </>
+                                )}
+                              </button>
+                            </div>
                           </div>
-                        </div>
 
-                        {/* Amount Field */}
-                        <div>
-                          <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
-                            Belopp
-                          </span>
-                          <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2">
-                            <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white font-mono">
-                              50 kr
+                          {/* Amount Field */}
+                          <div>
+                            <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                              Belopp
                             </span>
+                            <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5">
+                              <span className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-white font-mono">
+                                50 kr
+                              </span>
+                            </div>
                           </div>
-                        </div>
 
-                        {/* Reference Message Field */}
-                        <div>
-                          <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
-                            Meddelande / Referens
-                          </span>
-                          <div className="flex items-center justify-between bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2">
-                            <span className="font-mono text-xs font-bold text-slate-800 dark:text-white">
-                              {paymentMessage}
+                          {/* Reference Message Field */}
+                          <div>
+                            <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1 flex items-center justify-between">
+                              <span>Meddelande / Referens (VIKTIGT!)</span>
+                              <span className="text-rose-500 font-extrabold text-[9px] uppercase">Måste anges!</span>
                             </span>
-                            <button
-                              type="button"
-                              onClick={() => copyToClipboard(paymentMessage, "msg")}
-                              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-850 transition-all flex items-center gap-1 cursor-pointer"
-                            >
-                              {copiedMsg ? (
-                                <span className="text-[10px] text-emerald-500 font-bold">Kopierat!</span>
-                              ) : (
-                                <Copy className="h-3.5 w-3.5" />
-                              )}
-                            </button>
+                            <div className="flex items-center justify-between bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5">
+                              <span className="font-mono text-xs font-extrabold text-slate-800 dark:text-white">
+                                {paymentMessage}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => copyToClipboard(paymentMessage, "msg")}
+                                className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-850 transition-all flex items-center gap-1 cursor-pointer"
+                              >
+                                {copiedMsg ? (
+                                  <span className="text-[10px] text-emerald-500 font-bold">Kopierat!</span>
+                                ) : (
+                                  <Copy className="h-3.5 w-3.5" />
+                                )}
+                              </button>
+                            </div>
+                            <p className="text-[9px] text-slate-400 mt-1">
+                              Ange denna kod i Swish så ägaren kan se vem betalningen kom ifrån.
+                            </p>
                           </div>
-                          <p className="text-[9px] text-slate-400 mt-1">
-                            Ange denna kod i Swish så ägaren kan se vem betalningen kom ifrån.
-                          </p>
                         </div>
                       </div>
 
-                      {/* Swish QR Code Column */}
-                      <div className="md:col-span-5 flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-950 border border-slate-200/80 dark:border-slate-850 rounded-2xl">
-                        <span className="text-[9px] font-bold text-[#00C2E0] flex items-center gap-1 mb-2">
+                      {/* Swish QR Code Column (Hidden on mobile, always visible on md+) */}
+                      <div className="hidden md:flex md:col-span-5 flex-col items-center justify-center p-4 bg-white dark:bg-slate-950 border border-slate-200/80 dark:border-slate-850 rounded-2xl relative overflow-hidden self-center">
+                        <div className="absolute top-0 left-0 right-0 py-0.5 bg-slate-100 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 text-center text-[9px] font-bold text-slate-500 tracking-wide">
+                          Dator / Surfplatta 💻
+                        </div>
+                        <span className="text-[9px] font-bold text-[#00C2E0] flex items-center gap-1 mb-2 mt-2.5">
                           <QrCode className="h-3 w-3" />
-                        2. SKANNA I SWISH
+                          SKANNA QR-KOD
                         </span>
                         <div className="relative p-1.5 bg-white rounded-lg border border-slate-100 shadow-sm">
                           <img 
                             src={qrCodeUrl} 
                             alt="Swish QR-kod" 
-                            className="h-28 w-28 sm:h-32 sm:w-32 object-contain"
+                            className="h-28 w-28 object-contain"
                             referrerPolicy="no-referrer"
                           />
                           {/* Swish logo icon overlay in the center of QR code */}
@@ -294,33 +319,90 @@ export default function PremiumPaymentForm({ currentUser, onPaymentSuccess }: Pr
                             <div className="h-5.5 w-5.5 rounded-full bg-[#00C2E0] flex items-center justify-center text-white text-[9px] font-black">S</div>
                           </div>
                         </div>
-                        <span className="text-[9px] text-slate-400 text-center mt-2 font-medium">
-                          Skanna med din Swish-app för att förifylla allt direkt!
+                        <span className="text-[9px] text-slate-450 dark:text-slate-400 text-center mt-2.5 font-medium leading-normal">
+                          Smidigast om du betalar från din dator. Skanna i Swish-appen för att förifylla allt direkt!
                         </span>
                       </div>
                     </div>
 
-                    {/* Open Swish Button (only active on mobile/deep-links) */}
-                    <div className="pt-2 flex flex-col sm:flex-row gap-2">
-                      <a
-                        href={swishAppUrl}
-                        className="flex-1 bg-[#00C2E0] hover:bg-[#00b0cc] text-white font-extrabold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-all active:scale-98 cursor-pointer text-center"
-                        id="open-swish-app-button"
-                      >
-                        <Smartphone className="h-4 w-4" />
-                        <span>Öppna Swish-appen direkt</span>
-                        <ExternalLink className="h-3 w-3 opacity-80" />
-                      </a>
-
+                    {/* Mobile Expandable QR Code Accordion (compact and space-saving) */}
+                    <div className="block md:hidden border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden bg-white dark:bg-slate-950">
                       <button
                         type="button"
-                        onClick={handleConfirmSwishPayment}
-                        className="flex-1 bg-slate-900 hover:bg-slate-800 dark:bg-amber-500 dark:hover:bg-amber-400 text-white dark:text-slate-950 font-extrabold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 shadow-md transition-all active:scale-98 cursor-pointer"
-                        id="confirm-swish-done-button"
+                        onClick={() => setShowQRMobile(!showQRMobile)}
+                        className="w-full px-3.5 py-3 flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
+                        id="mobile-qr-toggle"
                       >
-                        <Check className="h-4 w-4 stroke-[2.5]" />
-                        <span>Jag har Swishat 50 kr</span>
+                        <span className="flex items-center gap-1.5 text-[#00C2E0]">
+                          <QrCode className="h-4 w-4" />
+                          <span>Betala från en annan enhet?</span>
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          {showQRMobile ? "Dölj QR-kod ▲" : "Visa QR-kod ▼"}
+                        </span>
                       </button>
+
+                      <AnimatePresence>
+                        {showQRMobile && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.15 }}
+                            className="overflow-hidden border-t border-slate-100 dark:border-slate-900"
+                          >
+                            <div className="p-4 flex flex-col items-center justify-center bg-slate-50/50 dark:bg-slate-900/30">
+                              <div className="relative p-2 bg-white rounded-xl border border-slate-200/60 shadow-sm mb-3">
+                                <img 
+                                  src={qrCodeUrl} 
+                                  alt="Swish QR-kod" 
+                                  className="h-32 w-32 object-contain"
+                                  referrerPolicy="no-referrer"
+                                />
+                                <div className="absolute inset-0 m-auto h-7 w-7 bg-white rounded-full flex items-center justify-center border border-slate-100 shadow-md">
+                                  <div className="h-5.5 w-5.5 rounded-full bg-[#00C2E0] flex items-center justify-center text-white text-[9px] font-black">S</div>
+                                </div>
+                              </div>
+                              <span className="text-[10px] text-slate-500 dark:text-slate-400 text-center font-medium max-w-xs leading-normal">
+                                Öppna Swish på din andra enhet och skanna denna QR-kod för att överföra pengarna omedelbart.
+                              </span>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    {/* Highly highlighted Mobile Swish Area */}
+                    <div className="p-3.5 bg-sky-50 dark:bg-sky-950/20 border border-sky-100 dark:border-sky-900/30 rounded-2xl space-y-3" id="mobile-payment-optimization-block">
+                      <div className="flex items-center gap-2 text-[11px] font-bold text-sky-800 dark:text-sky-350">
+                        <Smartphone className="h-4 w-4 text-[#00C2E0] shrink-0 animate-bounce" />
+                        <span>Använder du en mobiltelefon? 📱</span>
+                      </div>
+                      <p className="text-[10.5px] text-sky-700/90 dark:text-sky-300 leading-relaxed font-medium">
+                        Klicka på knappen nedan för att starta Swish-appen direkt på din telefon med färdiga uppgifter. (Kopiera referenskoden <code className="bg-sky-100 dark:bg-sky-950 font-bold px-1 py-0.5 rounded text-sky-900 dark:text-sky-200">{paymentMessage}</code> först om din enhet inte stödjer automatisk överföring).
+                      </p>
+
+                      <div className="pt-1 flex flex-col sm:flex-row gap-2.5">
+                        <a
+                          href={swishAppUrl}
+                          className="flex-1 bg-[#00C2E0] hover:bg-[#00b0cc] text-white font-black py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 shadow-md shadow-[#00C2E0]/15 transition-all active:scale-98 cursor-pointer text-center"
+                          id="open-swish-app-button"
+                        >
+                          <Smartphone className="h-4 w-4" />
+                          <span>ÖPPNA SWISH-APPEN DIREKT ⚡</span>
+                          <ExternalLink className="h-3 w-3 opacity-80" />
+                        </a>
+
+                        <button
+                          type="button"
+                          onClick={handleConfirmSwishPayment}
+                          className="flex-1 bg-slate-900 hover:bg-slate-850 dark:bg-amber-500 dark:hover:bg-amber-400 text-white dark:text-slate-950 font-extrabold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 shadow-md transition-all active:scale-98 cursor-pointer border border-transparent"
+                          id="confirm-swish-done-button"
+                        >
+                          <Check className="h-4 w-4 stroke-[2.5]" />
+                          <span>Verifiera min betalning</span>
+                        </button>
+                      </div>
                     </div>
 
                     <div className="text-center">

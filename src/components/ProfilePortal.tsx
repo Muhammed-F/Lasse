@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Briefcase, 
@@ -324,6 +324,13 @@ export default function ProfilePortal({
   const [showBilling, setShowBilling] = useState<boolean>(false);
   const [cancelConfirm, setCancelConfirm] = useState<boolean>(false);
   const [billingSubmitting, setBillingSubmitting] = useState<boolean>(false);
+
+  // Dynamic premium expiration date (always exactly 1 month from current date)
+  const premiumExpiryDate = useMemo(() => {
+    const today = new Date();
+    today.setDate(today.getDate() + 31); // 31 days remaining
+    return today.toISOString().split('T')[0];
+  }, []);
   const [isMobileGapModalOpen, setIsMobileGapModalOpen] = useState(false);
   const [isMobileCareerListOpen, setIsMobileCareerListOpen] = useState(false);
   const [cvSectionTab, setCvSectionTab] = useState<'preview' | 'data'>('preview');
@@ -2867,7 +2874,7 @@ export default function ProfilePortal({
                             <div className="space-y-1.5 font-mono text-[11px] text-slate-600 dark:text-slate-400 leading-normal">
                               <p className="flex justify-between">
                                 <span>Giltig till:</span>
-                                <strong className="text-slate-850 dark:text-slate-200 font-extrabold">2026-08-11</strong>
+                                <strong className="text-slate-850 dark:text-slate-200 font-extrabold">{premiumExpiryDate}</strong>
                               </p>
                               <p className="flex justify-between">
                                 <span>Återstående tid:</span>
@@ -2888,13 +2895,13 @@ export default function ProfilePortal({
                             {/* Show warning if active and not cancelled */}
                             {!isPremiumCancelled && (
                               <div className="p-2.5 bg-sky-50 dark:bg-sky-950/20 border border-sky-100 dark:border-sky-900/30 rounded-lg text-[10px] text-sky-800 dark:text-sky-300 leading-normal">
-                                Ditt Lasse Premium förnyas automatiskt den 2026-08-11. Du kan när som helst säga upp prenumerationen nedan för att undvika framtida avgifter.
+                                Ditt Lasse Premium förnyas automatiskt den {premiumExpiryDate}. Du kan när som helst säga upp prenumerationen nedan för att undvika framtida avgifter.
                               </div>
                             )}
 
                             {isPremiumCancelled ? (
                               <div className="p-2.5 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 rounded-lg text-[10px] text-rose-800 dark:text-rose-300 leading-normal">
-                                🛑 Prenumerationen är uppsagd. Du behåller full premiumåtkomst fram till den <strong>2026-08-11</strong>, därefter avslutas den och du debiteras inte igen.
+                                🛑 Prenumerationen är uppsagd. Du behåller full premiumåtkomst fram till den <strong>{premiumExpiryDate}</strong>, därefter avslutas den och du debiteras inte igen.
                               </div>
                             ) : null}
 
